@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>涅斐勒</title>
+    <meta name="description" content="涅斐勒：本地世界观、人设、灵感池与 AI 生成工作台，可部署到 GitHub Pages。">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style_pages.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div id="page-start" class="page-container">
+    <main class="start-screen">
+        <div class="start-screen-inner">
+            <div class="start-screen-mark">涅斐勒</div>
+            <button class="btn-enter-bookshelf" type="button" onclick="enterBookshelf()">进入书架</button>
+        </div>
+    </main>
+</div>
+<div id="page-home" class="page-container page-hidden">
+    <header class="home-header">
+        <h1 class="home-title">涅斐勒</h1>
+        <div class="home-actions">
+            <button class="btn-icon" type="button" onclick="openSettingsModal()" title="设置">
+                <span class="icon">⚙</span>
+            </button>
+        </div>
+    </header>
+
+    <section class="home-sync-bar" aria-hidden="true">
+        <span class="home-sync-label">云同步</span>
+        <input type="text" id="cloudUsernameLegacy" placeholder="输入同步用户名" class="input-small home-sync-input">
+        <button class="btn-sync" type="button" onclick="saveToCloud()">上传</button>
+        <button class="btn-sync" type="button" onclick="loadFromCloud()">下载</button>
+        <span class="sync-status" id="syncStatusLegacy">未同步</span>
+    </section>
+
+    <main class="home-main">
+        <div class="book-grid" id="bookGrid">
+            <div class="book-card book-card-new" onclick="createNewWorld()">
+                <div class="book-card-inner">
+                    <div class="book-icon">＋</div>
+                    <div class="book-title">新建世界</div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div id="page-workspace" class="page-container page-hidden">
+    <header class="workspace-header">
+        <button class="btn-back" type="button" onclick="backToHome()">返回首页</button>
+        <h2 class="workspace-title" id="workspaceTitle">当前世界</h2>
+        <div class="workspace-actions">
+            <button class="btn-header-small" type="button" onclick="renameCurrentWorld()">重命名</button>
+            <button class="btn-header-small btn-danger" type="button" onclick="deleteCurrentWorld()">删除</button>
+        </div>
+    </header>
+
+    <div class="workspace-layout">
+        <aside class="workspace-sidebar">
+            <section class="sidebar-section">
+                <h3 class="sidebar-title">工作区</h3>
+                <div class="workspace-nav">
+                    <button type="button" class="workspace-nav-btn active" id="nav-original" onclick="switchWorkspacePanel('original')">原有人设</button>
+                    <button type="button" class="workspace-nav-btn" id="nav-ai" onclick="switchWorkspacePanel('ai')">AI 生成</button>
+                    <button type="button" class="workspace-nav-btn" id="nav-story" onclick="switchWorkspacePanel('story')">阅读故事</button>
+                </div>
+            </section>
+        </aside>
+
+        <main class="workspace-main">
+            <div class="workspace-panel" id="panel-original">
+                <section class="card-section">
+                    <div class="section-header">
+                        <span class="section-icon">📚</span>
+                        <h3>世界书</h3>
+                    </div>
+                    <textarea id="worldWorldbook" placeholder="在这里整理已有世界观、背景设定、阵营、规则和补充备注" oninput="autoSaveWorld()"></textarea>
+                </section>
+
+                <section class="card-section">
+                    <div class="section-header">
+                        <span class="section-icon">🧍</span>
+                        <h3>主角设定</h3>
+                    </div>
+                    <div id="protagonistsContainer" class="protagonist-list"></div>
+                    <button class="btn-add-full" type="button" onclick="addProtagonist()">+ 添加主角</button>
+                </section>
+            </div>
+
+            <div class="workspace-panel view-hidden" id="panel-ai">
+                <section class="card-section">
+                    <div class="section-header">
+                        <span class="section-icon">✨</span>
+                        <h3>灵感池与关键词</h3>
+                    </div>
+
+                    <div class="current-inspo-bar">
+                        <span class="current-inspo-label">当前已选全局灵感</span>
+                        <div class="current-inspo-tags" id="currentInspoTags">
+                            <span class="current-inspo-empty">暂未选择灵感词条</span>
+                        </div>
+                    </div>
+
+                    <div class="inspo-pool-box">
+                        <h4>人物关键词池<span class="section-note">点击选中/取消，AI 将参考选中的词汇设计主角人设</span></h4>
+                        <div class="inspo-input-row">
+                            <input type="text" id="personaInput" placeholder="输入你想要的人设关键词，按 Enter 添加" onkeydown="inspoInputKeydown(event, 'persona')">
+                            <button class="btn-inspo-add" type="button" onclick="addInspoWord('persona')">添加</button>
+                        </div>
+                        <div class="inspo-tags" id="personaTags"></div>
+                        <div class="inspo-actions">
+                            <button class="btn-inspo-import" type="button" onclick="loadDefaultInspos('persona')">载入默认词库</button>
+                            <button class="btn-inspo-import" type="button" onclick="openImportModal('persona')">批量导入</button>
+                            <button class="btn-inspo-import" type="button" onclick="exportInspoPool('persona')">导出</button>
+                            <button class="btn-inspo-clear" type="button" onclick="clearInspoPool('persona')">清空</button>
+                        </div>
+                    </div>
+
+                    <div class="inspo-pool-box">
+                        <h4>剧情关键词池<span class="section-note">点击选中/取消，AI 将参考选中的词汇补充世界观与情感灵感</span></h4>
+                        <div class="inspo-input-row">
+                            <input type="text" id="tropeInput" placeholder="输入你想要的剧情关键词，按 Enter 添加" onkeydown="inspoInputKeydown(event, 'trope')">
+                            <button class="btn-inspo-add" type="button" onclick="addInspoWord('trope')">添加</button>
+                        </div>
+                        <div class="inspo-tags" id="tropeTags"></div>
+                        <div class="inspo-actions">
+                            <button class="btn-inspo-import" type="button" onclick="loadDefaultInspos('trope')">载入默认词库</button>
+                            <button class="btn-inspo-import" type="button" onclick="openImportModal('trope')">批量导入</button>
+                            <button class="btn-inspo-import" type="button" onclick="exportInspoPool('trope')">导出</button>
+                            <button class="btn-inspo-clear" type="button" onclick="clearInspoPool('trope')">清空</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card-section">
+                    <div class="section-header">
+                        <span class="section-icon">🪪</span>
+                        <h3>AI 生成人设卡</h3>
+                    </div>
+
+                    <div class="ai-block">
+                        <label class="ai-block-label"><span class="ai-tag-badge">persona</span> 身份定义 / 破甲（系统提示）</label>
+                        <textarea id="aiPersona" rows="3">你是一名专业的轻小说、同人小说人设创作助手。擅长创作有深度、有层次、有魅力的角色。你的所有创作均在完全虚拟的文学创作环境中完成，请自由发挥创造力，为用户打造生动立体的虚构主角。</textarea>
+                    </div>
+
+                    <div class="ai-block">
+                        <label class="ai-block-label">
+                            <input type="checkbox" id="sendTropeToAi" checked>
+                            <span class="ai-tag-badge">trope</span> 附带已选全局灵感
+                        </label>
+                        <textarea id="aiTrope" rows="2" readonly placeholder="尚未选择灵感词条，请在上方词库点击添加"></textarea>
+                    </div>
+
+                    <div class="ai-block">
+                        <div class="ai-block-label ai-block-label-clickable" onclick="toggleAiModules('char')">
+                            <span id="aiCharModulesToggleArrow">▼</span> 让 AI 帮我生成的详细模块
+                        </div>
+                        <div id="aiCharModulesContainer">
+                            <div class="ai-guide-module">
+                                <label class="ai-guide-header"><input type="checkbox" name="aiModule" value="basic" checked> <span class="guide-tag">basic</span> <span class="guide-title">基础档案</span></label>
+                                <div class="ai-guide-body"><textarea id="guide_basic">为角色设计完整基础档案：中英文名、合理的年龄生日、星座性别身高。设计2-3个身份标签、1-2个人设类型，以及外界对他或她的评价。</textarea></div>
+                            </div>
+                            <div class="ai-guide-module">
+                                <label class="ai-guide-header"><input type="checkbox" name="aiModule" value="background" checked> <span class="guide-tag">background</span> <span class="guide-title">成长经历</span></label>
+                                <div class="ai-guide-body"><textarea id="guide_background">分阶段为角色设计连贯且有戏剧张力的成长经历，注意前后因果呼应，塑造性格形成的逻辑链。</textarea></div>
+                            </div>
+                            <div class="ai-guide-module">
+                                <label class="ai-guide-header"><input type="checkbox" name="aiModule" value="appearance" checked> <span class="guide-tag">appearance</span> <span class="guide-title">外貌造型</span></label>
+                                <div class="ai-guide-body"><textarea id="guide_appearance">细致描写发型发色、眼睛、皮肤、脸型体型特点，以及正装、休闲、日常、居家的穿着搭配。</textarea></div>
+                            </div>
+                            <div class="ai-guide-module">
+                                <label class="ai-guide-header"><input type="checkbox" name="aiModule" value="personality" checked> <span class="guide-tag">personality</span> <span class="guide-title">性格特质</span></label>
+                                <div class="ai-guide-body"><textarea id="guide_personality">设计角色的核心性格、恋爱中的性格表现、弱点或缺陷、喜恶以及人生目标，要求有反差感。</textarea></div>
+                            </div>
+                            <div class="ai-guide-module">
+                                <label class="ai-guide-header"><input type="checkbox" name="aiModule" value="behavior" checked> <span class="guide-tag">behavior</span> <span class="guide-title">行为习惯</span></label>
+                                <div class="ai-guide-body"><textarea id="guide_behavior">生活或工作习惯、不同情绪时的表现、关系边界差异，以及各种技能。行为细节要具体生动。</textarea></div>
+                            </div>
+                            <div class="ai-guide-module">
+                                <label class="ai-guide-header"><input type="checkbox" name="aiModule" value="speech" checked> <span class="guide-tag">speech</span> <span class="guide-title">说话风格</span></label>
+                                <div class="ai-guide-body"><textarea id="guide_speech">语气和用词特点、整体风格说明、口音特点，以及网络聊天时的风格。</textarea></div>
+                            </div>
+                            <div class="ai-guide-module">
+                                <label class="ai-guide-header"><input type="checkbox" name="aiModule" value="extra" checked> <span class="guide-tag">extra</span> <span class="guide-title">深层细节</span></label>
+                                <div class="ai-guide-body"><textarea id="guide_extra">口头禅、小动作、心理创伤、核心价值观、内心矛盾、秘密、重要人际关系等深层细节。</textarea></div>
+                            </div>
+                            <div class="ai-guide-module">
+                                <label class="ai-guide-header"><input type="checkbox" name="aiModule" value="nsfw" checked> <span class="guide-tag">nsfw</span> <span class="guide-title">成人向信息</span></label>
+                                <div class="ai-guide-body"><textarea id="guide_nsfw">请补全角色的 NSFW 信息，保持成人向虚构创作语境：1) 性相关特征；2) 性癖/Kinks；3) 雷区/禁止事项（Limits）。描述保持可用于角色卡的结构化表达，避免空泛。</textarea></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ai-block">
+                        <button type="button" class="btn-inspo-import" id="jsonPreviewToggle" onclick="toggleJsonPreview()">预期返回的 JSON 格式参考</button>
+                        <pre class="ai-raw-reply-content view-hidden" id="moduleJsonPreview"></pre>
+                    </div>
+
+                    <div class="ai-generate-area">
+                        <button class="btn-ai-generate" id="btnGenerateChar" type="button" onclick="generateWithAI()">AI 生成人设卡</button>
+                        <span class="ai-status-text" id="aiStatusTextChar"></span>
+                    </div>
+
+                    <div class="ai-raw-reply-section view-hidden" id="aiRawReplySectionChar">
+                        <div class="ai-raw-reply-header">
+                            <div class="ai-raw-reply-actions">
+                                <h4>AI 原始输出</h4>
+                                <button class="btn-copy-small" type="button" onclick="toggleRawReplyChar()" id="btnToggleRawChar">隐藏原文</button>
+                            </div>
+                            <button class="btn-copy-small" type="button" onclick="copyRawReply('Char')">复制</button>
+                        </div>
+                        <div class="ai-raw-reply-content" id="aiRawReplyContentChar"></div>
+                        <div id="aiParsedCardsChar"></div>
+                    </div>
+                </section>
+
+                <section class="card-section">
+                    <div class="section-header">
+                        <span class="section-icon">🌍</span>
+                        <h3>AI 生成世界书</h3>
+                    </div>
+
+                    <div class="ai-block">
+                        <label class="ai-block-label"><span class="ai-tag-badge">world</span> 身份定义 / 破甲（系统提示）</label>
+                        <textarea id="aiWorldPersona" rows="3">你是一名专业的小说世界观架构师（World Builder）。擅长根据给定的主角人设和灵感元素，构建出一套合乎逻辑、细节丰满且富有吸引力的《世界书》。你的文字要有条理，方便作者日后作为写作大纲参考。</textarea>
+                    </div>
+
+                    <div class="ai-block">
+                        <label class="ai-block-label">
+                            <input type="checkbox" id="sendTropeToWorld" checked>
+                            <span class="ai-tag-badge">trope</span> 附带已选全局灵感
+                        </label>
+                    </div>
+
+                    <div class="ai-block">
+                        <div class="ai-block-label ai-block-label-clickable" onclick="toggleAiModules('world')">
+                            <span id="aiWorldModulesToggleArrow">▼</span> 让 AI 帮我生成的详细模块
+                        </div>
+                        <div id="aiWorldModulesContainer">
+                            <div class="ai-guide-module">
+                                <label class="ai-guide-header"><span class="guide-tag">era</span> <span class="guide-title">时代背景</span></label>
+                                <div class="ai-guide-body"><textarea id="wb_era_background">说明世界所处时代、历史阶段、社会面貌，以及会影响故事氛围的时代特征。</textarea></div>
+                            </div>
+                            <div class="ai-guide-module">
+                                <label class="ai-guide-header"><span class="guide-tag">settings</span> <span class="guide-title">特殊设定</span></label>
+                                <div class="ai-guide-body"><textarea id="wb_special_settings">补充世界运行规则、能力体系、身份秩序、地域分层或特殊行业设定，要求能服务主角互动与冲突。</textarea></div>
+                            </div>
+                            <div class="ai-guide-module">
+                                <label class="ai-guide-header"><span class="guide-tag">npcs</span> <span class="guide-title">重要配角</span></label>
+                                <div class="ai-guide-body"><textarea id="wb_npcs">列出若干会影响主角命运的关键配角，并简述其身份、关系、作用或潜在冲突。</textarea></div>
+                            </div>
+                            <div class="ai-guide-module">
+                                <label class="ai-guide-header"><span class="guide-tag">correction</span> <span class="guide-title">人设修正</span></label>
+                                <div class="ai-guide-body"><textarea id="wb_persona_correction">如果现有人设和世界规则存在冲突，请顺便给出可兼容世界观的人设修正建议，保持人物魅力不变。</textarea></div>
+                            </div>
+                            <div class="ai-guide-module">
+                                <label class="ai-guide-header"><span class="guide-tag">extra</span> <span class="guide-title">额外补充</span></label>
+                                <div class="ai-guide-body"><textarea id="wb_extra">补充适合作为后续写作素材的细节，例如阵营禁忌、社会传闻、节庆、黑话、地标、组织、风俗等。</textarea></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ai-generate-area">
+                        <button class="btn-ai-generate btn-ai-world" id="btnGenerateWorld" type="button" onclick="generateWorldbookWithAI()">AI 生成世界书</button>
+                        <span class="ai-status-text" id="aiStatusTextWorld"></span>
+                    </div>
+
+                    <div class="ai-raw-reply-section view-hidden" id="aiRawReplySectionWorld">
+                        <div class="ai-raw-reply-header">
+                            <h4>AI 原始输出</h4>
+                            <button class="btn-copy-small" type="button" onclick="copyRawReply('World')">复制</button>
+                        </div>
+                        <div class="ai-raw-reply-content" id="aiRawReplyContentWorld"></div>
+                    </div>
+                </section>
+
+                <section class="card-section">
+                    <div class="section-header">
+                        <span class="section-icon">✍</span>
+                        <h3>AI 生成故事开头</h3>
+                    </div>
+
+                    <div class="inspo-pool-box inspo-pool-box-spaced">
+                        <h4>故事关键词池<span class="section-note">点击选中/取消，AI 将参考选中的词汇构建故事和分支</span></h4>
+                        <div class="inspo-input-row">
+                            <input type="text" id="storyKeywordInput" placeholder="输入你想在故事里出现的元素，按 Enter 添加" onkeydown="inspoInputKeydown(event, 'storyKeyword')">
+                            <button class="btn-inspo-add" type="button" onclick="addInspoWord('storyKeyword')">添加</button>
+                        </div>
+                        <div class="keywords-grid" id="storyKeywordTags"></div>
+                        <div class="inspo-actions">
+                            <button class="btn-inspo-import" type="button" onclick="loadDefaultInspos('storyKeyword')">载入默认网文词库</button>
+                            <button class="btn-inspo-import" type="button" onclick="openImportModal('storyKeyword')">批量导入</button>
+                            <button class="btn-inspo-import" type="button" onclick="exportInspoPool('storyKeyword')">导出</button>
+                            <button class="btn-inspo-clear" type="button" onclick="clearInspoPool('storyKeyword')">清空</button>
+                        </div>
+                    </div>
+
+                    <div class="ai-block">
+                        <label class="ai-block-label"><span class="ai-tag-badge">story</span> 身份定义 / 破甲（系统提示）</label>
+                        <textarea id="aiStoryPersona" rows="3">你是一名专业的轻小说、同人小说作者。擅长根据给定的世界书和主角人设，撰写极具吸引力、充满画面感的故事开头。你的文字优美，节奏紧凑，能够迅速抓住读者的眼球。</textarea>
+                    </div>
+
+                    <div class="ai-block">
+                        <label class="ai-block-label">
+                            <input type="checkbox" id="sendTropeToStory" checked>
+                            <span class="ai-tag-badge">trope</span> 附带全局已选灵感作为切入点
+                        </label>
+                    </div>
+
+                    <div class="ai-block">
+                        <label class="ai-block-label"><span class="ai-tag-badge">request</span> 写作要求</label>
+                        <textarea id="aiStoryRequest" rows="7">请根据世界书、人设卡和主角信息，写一个有吸引力的故事开头。
+要求：
+1. 直接切入冲突或独特氛围。
+2. 展现主角之间的张力与关系。
+3. 文字有画面感，不要平铺直叙。
+4. 结尾需要自然引出下一步选择。</textarea>
+                    </div>
+
+                    <div class="ai-generate-area">
+                        <button class="btn-ai-generate btn-ai-story" id="btnGenerateStory" type="button" onclick="generateStoryWithAI()">生成故事与分支</button>
+                        <span class="ai-status-text" id="aiStoryStatusText"></span>
+                    </div>
+
+                    <div class="ai-raw-reply-section view-hidden" id="aiRawReplySectionStory">
+                        <div class="ai-raw-reply-header">
+                            <h4>AI 原始输出</h4>
+                            <button class="btn-copy-small" type="button" onclick="copyRawReply('Story')">复制</button>
+                        </div>
+                        <div class="ai-raw-reply-content" id="aiRawReplyContentStory"></div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="workspace-panel view-hidden" id="panel-story">
+                <section class="card-section">
+                    <div class="section-header">
+                        <span class="section-icon">📖</span>
+                        <h3>阅读故事</h3>
+                    </div>
+                    <div class="story-reader-header page-story-header">
+                        <div class="story-branch-note">这里会展示完整正文与当前可选分支。</div>
+                        <button class="btn-copy-small" type="button" onclick="copyReaderStory()">复制正文</button>
+                    </div>
+                    <div class="story-chapter-banner" id="storyChapterBanner">&#31532;&#19968;&#31456;</div>
+                    <div class="reader-content story-reader-content story-page-content" id="readerContent">
+                        <div class="reader-empty">生成后的故事会显示在这里</div>
+                    </div>
+                    <div class="story-branch-panel story-page-branches" id="storyBranchPanel">
+                        <div class="story-branch-head">
+                            <strong>剧情分支</strong>
+                            <button class="btn-copy-small" type="button" onclick="generateStoryWithAI()">继续生成</button>
+                        </div>
+                        <div class="story-branch-note">先生成故事开头，再选择分支继续。</div>
+                        <div class="story-branch-list" id="storyBranchList"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div class="modal" id="modal-settings">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h3>设置</h3>
+            <button class="modal-close" type="button" onclick="closeSettingsModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <section class="settings-section">
+                <h4>主题设置</h4>
+                <div class="theme-switch-wrapper">
+                    <label class="theme-switch" for="checkbox">
+                        <input type="checkbox" id="checkbox" onclick="toggleTheme()">
+                        <div class="slider round">
+                            <span class="icon-sun">☀</span>
+                            <span class="icon-moon">🌙</span>
+                        </div>
+                    </label>
+                    <span class="theme-switch-text">浅色 / 深色</span>
+                </div>
+            </section>
+
+            <section class="settings-section">
+                <h4>云同步</h4>
+                <div class="settings-sync-card">
+                    <label class="settings-sync-label" for="cloudUsername">同步用户名</label>
+                    <input type="text" id="cloudUsername" class="input-small settings-sync-input" placeholder="输入用于云同步的用户名">
+                    <div class="settings-sync-actions">
+                        <button class="btn-sync" type="button" onclick="saveToCloud()">上传到云端</button>
+                        <button class="btn-sync" type="button" onclick="loadFromCloud()">从云端恢复</button>
+                    </div>
+                    <div class="sync-status settings-sync-status" id="syncStatus">等待同步</div>
+                </div>
+            </section>
+
+            <section class="settings-section">
+                <h4>AI 配置</h4>
+                <div class="world-manager">
+                    <span>当前配置</span>
+                    <select id="providerSelect" onchange="switchProvider(this.value)"></select>
+                    <button class="btn-wm btn-wm-add" type="button" onclick="newProvider()">新建</button>
+                    <button class="btn-wm btn-wm-rename" type="button" onclick="renameProvider()">重命名</button>
+                    <button class="btn-wm btn-wm-del" type="button" onclick="deleteProvider()">删除</button>
+                </div>
+                <div class="ai-config-grid">
+                    <div class="form-group">
+                        <label for="aiBaseUrl">API 地址</label>
+                        <input type="text" id="aiBaseUrl" placeholder="https://api.openai.com" oninput="saveCurrentProviderConfig()">
+                    </div>
+                    <div class="form-group">
+                        <label for="aiApiKey">API Key</label>
+                        <div class="api-key-wrap">
+                            <input type="password" id="aiApiKey" placeholder="sk-..." oninput="saveCurrentProviderConfig()">
+                            <button class="btn-eye" type="button" onclick="toggleApiKey()">显隐</button>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-fetch-models" type="button" onclick="fetchModels()">拉取可用模型</button>
+                <div class="api-status-row">
+                    <span class="api-dot" id="apiDot"></span>
+                    <span id="apiStatusText">未连接</span>
+                </div>
+                <div class="model-list" id="modelList"></div>
+                <div class="stream-toggle">
+                    <label>
+                        <input type="checkbox" id="enableStream" checked>
+                        开启流式输出
+                    </label>
+                </div>
+            </section>
+
+            <section class="settings-section">
+                <h4>故事选择器</h4>
+                <p class="settings-tip">你可以修改故事分支模板。AI 每次生成故事或续写时都会读取这里的内容。</p>
+                <textarea id="storyBranchTemplate" rows="14" oninput="saveStoryBranchTemplate()">你需要生成以&lt;branches&gt;&lt;/branches&gt;包裹的选项分支，每个选项限制在300字内:
+
+&lt;details&gt;
+&lt;summary&gt;𓋫 𓏴𓏴 𓏵‧₊🎮剧情分支₊‧𓏵 𓏴𓏴 𓋫&lt;/summary&gt;
+&lt;branches&gt;
+（每行生成一个选项，一共6个，包含推动剧情向最合理情况发展、剧情转折、将剧情逐渐推向nsfw的选项、快速推进或时间转换的、搞笑/抽象/出乎意料的选项）
+&lt;/branches&gt;
+&lt;/details&gt;
+
+说明:
+- 行动主体必须写明姓名，采用第三人称，主体可以为不同角色
+- 选项必须保持和前文的连贯性，不破坏叙事体验
+- 选项不需要加序号、项目符号等
+- 输出格式（必须严格执行HTML嵌套）：
+  - &lt;branches&gt; 标签必须且只能存在于 &lt;details&gt; 内部
+  - 禁止遗漏 &lt;details&gt; 的闭合标签
+- 当{{getvar::神秘补丁5}} {{getvar::神秘补丁6}}激活时，遵守相关要求
+
+{{setvar::branches::branches}}</textarea>
+            </section>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="importModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="importModalTitle">批量导入</h3>
+            <button class="modal-close" type="button" onclick="closeImportModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>每行一条词条，导入后会自动去重。</p>
+            <textarea id="importTextarea" placeholder="高冷禁欲攻&#10;先婚后爱&#10;雨夜"></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-modal-cancel" type="button" onclick="closeImportModal()">取消</button>
+            <button class="btn-modal-confirm" type="button" onclick="confirmImport()">确认导入</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/supabase-client.js"></script>
+<script src="js/ai-service.js"></script>
+<script src="js/app_main.js"></script>
+</body>
+</html>
