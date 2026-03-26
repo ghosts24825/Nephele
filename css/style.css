@@ -1735,3 +1735,150 @@ button {
         border-radius: 18px;
     }
 }
+
+/* Mobile Scroll Fixes */
+html,
+body {
+    min-height: 100%;
+}
+
+body,
+.page-container,
+#page-home,
+#page-workspace,
+#page-home .home-main,
+#page-workspace .workspace-main,
+#page-workspace .workspace-layout,
+#page-workspace .workspace-panel,
+#page-workspace .card-section {
+    overflow-y: visible;
+}
+
+#modal-settings .modal-content {
+    max-height: 100vh;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+#modal-settings .modal-body {
+    overflow-y: auto;
+    max-height: calc(100vh - 96px);
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+    }
+
+    html,
+    body {
+        height: auto;
+        min-height: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .page-container,
+    #page-home,
+    #page-workspace,
+    #page-home .home-main,
+    #page-workspace .workspace-main,
+    #page-workspace .workspace-layout,
+    #page-workspace .workspace-panel {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    #page-workspace .workspace-header,
+    #page-home .home-header {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    #page-workspace .btn-back {
+        position: static !important;
+        left: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        width: auto !important;
+        margin-bottom: 6px;
+    }
+
+    #page-workspace .workspace-layout {
+        display: block !important;
+        min-height: auto !important;
+        padding: 10px 12px 24px !important;
+    }
+
+    #page-workspace .workspace-sidebar,
+    #page-workspace .workspace-main,
+    #page-workspace .workspace-reader,
+    #page-workspace .card-section,
+    #page-home .home-main,
+    #page-home .book-grid,
+    #modal-settings .modal-content,
+    #modal-settings .modal-body,
+    #modal-settings .settings-sync-card {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    #page-workspace .workspace-sidebar,
+    #page-workspace .workspace-main,
+    #page-workspace .workspace-reader {
+        overflow: visible !important;
+    }
+
+    #page-workspace .card-section {
+        padding: 14px 12px 18px !important;
+        margin-bottom: 12px;
+    }
+
+    #page-workspace .workspace-panel#panel-story .story-reader-content,
+    #page-workspace .workspace-panel#panel-story .reader-content,
+    #page-workspace .reader-content,
+    #page-workspace .story-reader-content {
+        min-height: 0 !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow-y: visible !important;
+    }
+
+    #page-workspace .ai-generate-area {
+        position: static !important;
+        bottom: auto !important;
+        margin: 14px 0 10px !important;
+    }
+
+    #page-home .home-main {
+        padding: 12px 12px 24px !important;
+    }
+
+    #page-home .book-grid {
+        overflow: visible !important;
+    }
+
+    #modal-settings {
+        align-items: flex-start !important;
+        padding: 10px;
+        overflow-y: auto;
+    }
+
+    #modal-settings .modal-content {
+        margin: 0 auto;
+        max-height: 100vh !important;
+        overflow-y: auto !important;
+        border-radius: 16px;
+    }
+
+    #modal-settings .modal-body {
+        overflow-y: auto !important;
+        max-height: calc(100vh - 88px) !important;
+        padding-bottom: calc(18px + env(safe-area-inset-bottom));
+    }
+}
