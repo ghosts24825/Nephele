@@ -181,6 +181,15 @@
         window.setTimeout(() => toast.classList.remove('show'), duration);
     }
 
+    function scrollResultIntoView(outputId) {
+        const output = document.getElementById(outputId);
+        const resultSection = output?.closest('.ai-raw-reply-section') || output;
+        if (!resultSection) return;
+        window.setTimeout(() => {
+            resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 120);
+    }
+
     function createDefaultWorld(name = '世界 1') {
         return {
             name,
@@ -872,6 +881,8 @@
         const button = document.getElementById(buttonId);
         const status = document.getElementById(statusId);
         if (button) button.disabled = busy;
+        if (button) button.classList.toggle('is-loading', busy);
+        if (status) status.classList.toggle('is-loading', busy);
         if (status) status.textContent = text || '';
     }
 
@@ -1071,6 +1082,7 @@
             if (output) output.textContent = content;
             if (after) after(content);
             setButtonBusy(buttonId, statusId, false, '生成完成');
+            scrollResultIntoView(outputId);
             return content;
         } catch (error) {
             setButtonBusy(buttonId, statusId, false, error.message || '生成失败');
