@@ -6,6 +6,7 @@
     <title>涅斐勒</title>
     <meta name="description" content="涅斐勒：本地世界观、人设、灵感池与 AI 生成工作台，可部署到 GitHub Pages。">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style_bookshelf.css">
     <link rel="stylesheet" href="css/style_pages.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -189,7 +190,7 @@
                             </div>
                             <div class="ai-guide-module">
                                 <label class="ai-guide-header"><input type="checkbox" name="aiModule" value="nsfw" checked> <span class="guide-tag">nsfw</span> <span class="guide-title">成人向信息</span></label>
-                                <div class="ai-guide-body"><textarea id="guide_nsfw">请补全角色的 NSFW 信息，保持成人向虚构创作语境：1) 性相关特征；2) 性癖/Kinks；3) 雷区/禁止事项（Limits）。描述保持可用于角色卡的结构化表达，避免空泛。</textarea></div>
+                                <div class="ai-guide-body"><textarea id="guide_nsfw">请补全角色的NSFW信息，保持成人向虚构创作语境：1) 性相关特征：性经验、性取向、性器官特征，性爱角色/定位（2-4条）、性爱习惯（2-4条）；2) 性癖/Kinks：给出3-8条偏好关键词或短句；3) 雷区/禁止事项（Limits）：给出3-8条明确边界。描述保持可用于角色卡的结构化表达，避免空泛。</textarea></div>
                             </div>
                         </div>
                     </div>
@@ -312,12 +313,13 @@
 
                     <div class="ai-block">
                         <label class="ai-block-label"><span class="ai-tag-badge">request</span> 写作要求</label>
-                        <textarea id="aiStoryRequest" rows="7">请根据世界书、人设卡和主角信息，写一个有吸引力的故事开头。
+                        <textarea id="aiStoryRequest" rows="7">请根据小世界设定和主角信息，写一个大约 500 字的故事开头（第一章）。
 要求：
-1. 直接切入冲突或独特氛围。
-2. 展现主角之间的张力与关系。
-3. 文字有画面感，不要平铺直叙。
-4. 结尾需要自然引出下一步选择。</textarea>
+1. 直接切入核心冲突或展现世界观的独特魅力。
+2. 充分展现主角们的性格特点与张力，安排他们合理的出场方式。
+3. 文字要有画面感和氛围感，不要平铺直叙地介绍背景。
+4. 故事可以在主角相遇初始或相遇后，或者相恋时，结婚后等不同的时间线。
+5. 细节要生动。</textarea>
                     </div>
 
                     <div class="ai-generate-area">
