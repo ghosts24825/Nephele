@@ -405,9 +405,17 @@
         document.getElementById('panel-original')?.classList.toggle('view-hidden', panel !== 'original');
         document.getElementById('panel-ai')?.classList.toggle('view-hidden', panel !== 'ai');
         document.getElementById('panel-story')?.classList.toggle('view-hidden', panel !== 'story');
-        document.getElementById('nav-original')?.classList.toggle('active', panel === 'original');
-        document.getElementById('nav-ai')?.classList.toggle('active', panel === 'ai');
-        document.getElementById('nav-story')?.classList.toggle('active', panel === 'story');
+        const navOriginal = document.getElementById('nav-original');
+        const navAi = document.getElementById('nav-ai');
+        const navStory = document.getElementById('nav-story');
+        navOriginal?.classList.toggle('active', panel === 'original');
+        navAi?.classList.toggle('active', panel === 'ai');
+        navStory?.classList.toggle('active', panel === 'story');
+
+        if (window.matchMedia?.('(max-width: 992px)').matches) {
+            const activeNav = panel === 'original' ? navOriginal : (panel === 'ai' ? navAi : navStory);
+            activeNav?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
     }
 
     function getSupabaseApi() {
