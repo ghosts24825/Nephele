@@ -57,6 +57,44 @@
         nsfw: '"nsfw": {\n      "experiences": "",\n      "sexual_organs": "",\n      "sexual_orientation": "",\n      "sexual_role": [],\n      "sexual_habits": [],\n      "kinks": [],\n      "limits": []\n    }'
     };
 
+    const WORLD_MODULE_CONFIGS = [
+        {
+            key: 'era_background',
+            textareaId: 'wb_era_background',
+            label: '时代背景',
+            hintId: 'wb_era_background_hint',
+            defaultHint: '请明确小世界所处的时代、社会环境、发展水平与整体氛围。'
+        },
+        {
+            key: 'special_settings',
+            textareaId: 'wb_special_settings',
+            label: '特殊设定',
+            hintId: 'wb_special_settings_hint',
+            defaultHint: '请补充这个世界独有的规则、力量体系、文化习俗、限制条件或隐藏机制。'
+        },
+        {
+            key: 'npcs',
+            textareaId: 'wb_npcs',
+            label: '重要配角',
+            hintId: 'wb_npcs_hint',
+            defaultHint: '请规划与主角关系密切、能推动剧情的重要角色或势力。'
+        },
+        {
+            key: 'persona_correction',
+            textareaId: 'wb_persona_correction',
+            label: '人设修正',
+            hintId: 'wb_persona_correction_hint',
+            defaultHint: '如果主角设定与世界存在冲突，请在这里提示 AI 做兼容与补强。'
+        },
+        {
+            key: 'extra',
+            textareaId: 'wb_extra',
+            label: '额外补充',
+            hintId: 'wb_extra_hint',
+            defaultHint: '补充任何你希望世界书额外覆盖的写作重点、主题或氛围要求。'
+        }
+    ];
+
     let currentImportType = null;
     let currentStreamingTarget = null;
     let currentWorkspacePanel = 'original';
@@ -212,7 +250,9 @@
                 storyBranchesHtml: '',
                 storyBranches: [],
                 selectedBranch: '',
-                storyHistory: []
+                storyHistory: [],
+                worldModuleDrafts: {},
+                worldModuleSelection: {}
             }
         };
     }
@@ -276,6 +316,8 @@
         world.ai.storyHtml ||= '';
         world.ai.storyBranchesHtml ||= '';
         world.ai.selectedBranch ||= '';
+        world.ai.worldModuleDrafts ||= {};
+        world.ai.worldModuleSelection ||= {};
         applyGlobalInspoToWorld(world);
     }
 
@@ -403,17 +445,25 @@
     function switchWorkspacePanel(panel) {
         currentWorkspacePanel = panel;
         document.getElementById('panel-original')?.classList.toggle('view-hidden', panel !== 'original');
+        document.getElementById('panel-inspo')?.classList.toggle('view-hidden', panel !== 'inspo');
         document.getElementById('panel-ai')?.classList.toggle('view-hidden', panel !== 'ai');
+        document.getElementById('panel-opening')?.classList.toggle('view-hidden', panel !== 'opening');
         document.getElementById('panel-story')?.classList.toggle('view-hidden', panel !== 'story');
         const navOriginal = document.getElementById('nav-original');
+        const navInspo = document.getElementById('nav-inspo');
         const navAi = document.getElementById('nav-ai');
+        const navOpening = document.getElementById('nav-opening');
         const navStory = document.getElementById('nav-story');
         navOriginal?.classList.toggle('active', panel === 'original');
+        navInspo?.classList.toggle('active', panel === 'inspo');
         navAi?.classList.toggle('active', panel === 'ai');
+        navOpening?.classList.toggle('active', panel === 'opening');
         navStory?.classList.toggle('active', panel === 'story');
 
         if (window.matchMedia?.('(max-width: 992px)').matches) {
-            const activeNav = panel === 'original' ? navOriginal : (panel === 'ai' ? navAi : navStory);
+            const activeNav = panel === 'original'
+                ? navOriginal
+                : (panel === 'inspo' ? navInspo : (panel === 'ai' ? navAi : (panel === 'opening' ? navOpening : navStory)));
             activeNav?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
     }
@@ -455,17 +505,7 @@
             card.addEventListener('click', () => enterWorkspace(worldId));
             grid.appendChild(card);
         });
-    }
-
-    function renderChapterList(world) {
-        const container = document.getElementById('chapterList');
-        if (!container) return;
-        container.innerHTML = world.chapters.length
-            ? world.chapters.map((chapter, index) => `<div class="chapter-item">${index + 1}. ${escapeHtml(chapter)}</div>`).join('')
-            : '<div class="chapter-item">暂无章节</div>';
-    }
-
-    function renderProtagonists(world) {
+    }    function renderProtagonists(world) {
         const container = document.getElementById('protagonistsContainer');
         if (!container) return;
         const roleOptions = ['\u7537\u4e3b\u653b', '\u7537\u4e3b\u53d7', '\u5973\u4e3b\u653b', '\u5973\u4e3b\u53d7', '\u7537\u4e3b', '\u5973\u4e3b'];
@@ -511,13 +551,13 @@
 
     function renderSelectedInspos(world) {
         ensureWorldShape(world);
-        const container = document.getElementById('currentInspoTags');
-        if (!container) return;
+        const containers = Array.from(document.querySelectorAll('[data-role="selected-inspos"]'));
+        if (!containers.length) return;
         const tags = [
             ...world.selected.persona.map(value => ({ type: 'persona', value })),
             ...world.selected.trope.map(value => ({ type: 'trope', value }))
         ];
-        container.innerHTML = tags.length
+        const markup = tags.length
             ? tags.map(tag => `
                 <span class="current-inspo-tag">
                     ${escapeHtml(tag.value)}
@@ -525,6 +565,9 @@
                 </span>
             `).join('')
             : '<span class="current-inspo-empty">暂未选择灵感词条</span>';
+        containers.forEach(container => {
+            container.innerHTML = markup;
+        });
     }
 
     function renderReader(world) {
@@ -615,13 +658,19 @@
         document.getElementById('aiStoryPersona').value = world.ai.storyPersona || document.getElementById('aiStoryPersona').value;
         document.getElementById('aiStoryRequest').value = world.ai.storyRequest || document.getElementById('aiStoryRequest').value;
         document.getElementById('storyBranchTemplate').value = world.ai.branchTemplate || DEFAULT_BRANCH_TEMPLATE;
+        WORLD_MODULE_CONFIGS.forEach(config => {
+            const textarea = document.getElementById(config.textareaId);
+            const checkbox = document.querySelector(`input[name="worldModule"][value="${config.key}"]`);
+            if (textarea) textarea.value = world.ai.worldModuleDrafts?.[config.key] || '';
+            if (checkbox) checkbox.checked = world.ai.worldModuleSelection?.[config.key] !== false;
+            updateWorldModuleHint(config.textareaId, config.hintId);
+        });
         document.getElementById('aiRawReplyContentChar').textContent = world.ai.rawChar || '';
         document.getElementById('aiRawReplyContentWorld').textContent = world.ai.rawWorld || '';
         document.getElementById('aiRawReplyContentStory').textContent = world.ai.rawStory || '';
         document.getElementById('aiRawReplySectionChar')?.classList.toggle('view-hidden', !world.ai.rawChar);
         document.getElementById('aiRawReplySectionWorld')?.classList.toggle('view-hidden', !world.ai.rawWorld);
         document.getElementById('aiRawReplySectionStory')?.classList.toggle('view-hidden', !world.ai.rawStory);
-        renderChapterList(world);
         renderProtagonists(world);
         renderTagGroup('persona', world.pools.persona, world.selected.persona);
         renderTagGroup('trope', world.pools.trope, world.selected.trope);
@@ -836,6 +885,36 @@
             world.ai.storyPersona = document.getElementById('aiStoryPersona')?.value || '';
             world.ai.storyRequest = document.getElementById('aiStoryRequest')?.value || '';
             world.ai.branchTemplate = document.getElementById('storyBranchTemplate')?.value || DEFAULT_BRANCH_TEMPLATE;
+            WORLD_MODULE_CONFIGS.forEach(config => {
+                const textarea = document.getElementById(config.textareaId);
+                const checkbox = document.querySelector(`input[name="worldModule"][value="${config.key}"]`);
+                world.ai.worldModuleDrafts[config.key] = textarea?.value || '';
+                world.ai.worldModuleSelection[config.key] = checkbox ? checkbox.checked : true;
+            });
+        });
+    }
+
+    function updateWorldModuleHint(textareaId, hintId) {
+        const textarea = document.getElementById(textareaId);
+        const hint = document.getElementById(hintId);
+        if (!textarea || !hint) return;
+        hint.classList.toggle('hidden', Boolean(textarea.value.trim()));
+    }
+
+    function initWorldModuleHints() {
+        WORLD_MODULE_CONFIGS.forEach(config => {
+            const textarea = document.getElementById(config.textareaId);
+            const hint = document.getElementById(config.hintId);
+            if (!textarea || !hint) return;
+            if (!hint.textContent.trim()) hint.textContent = config.defaultHint;
+            updateWorldModuleHint(config.textareaId, config.hintId);
+            textarea.addEventListener('input', () => {
+                updateWorldModuleHint(config.textareaId, config.hintId);
+                saveAiDrafts();
+            });
+        });
+        document.querySelectorAll('input[name="worldModule"]').forEach(input => {
+            input.addEventListener('change', saveAiDrafts);
         });
     }
 
@@ -847,9 +926,19 @@
         const container = document.getElementById(mode === 'world' ? 'aiWorldModulesContainer' : 'aiCharModulesContainer');
         const arrow = document.getElementById(mode === 'world' ? 'aiWorldModulesToggleArrow' : 'aiCharModulesToggleArrow');
         if (!container || !arrow) return;
-        const hidden = container.style.display === 'none';
-        container.style.display = hidden ? '' : 'none';
-        arrow.textContent = hidden ? '▼' : '▶';
+        const hidden = container.classList.toggle('view-hidden');
+        arrow.textContent = hidden ? '▸' : '▾';
+    }
+
+    function toggleFoldSection(sectionId) {
+        const section = document.getElementById(sectionId);
+        if (!section) return;
+        const nextCollapsed = !section.classList.contains('is-collapsed');
+        section.classList.toggle('is-collapsed', nextCollapsed);
+        const button = section.querySelector('.fold-toggle');
+        const arrow = section.querySelector('.fold-arrow');
+        if (button) button.setAttribute('aria-expanded', String(!nextCollapsed));
+        if (arrow) arrow.textContent = nextCollapsed ? '▸' : '▾';
     }
 
     function toggleJsonPreview() {
@@ -1143,15 +1232,15 @@
             showToast('请先添加至少一个主角');
             return;
         }
-        const modules = [
-            ['时代背景', document.getElementById('wb_era_background')?.value || ''],
-            ['特殊设定', document.getElementById('wb_special_settings')?.value || ''],
-            ['重要配角', document.getElementById('wb_npcs')?.value || ''],
-            ['人设修正', document.getElementById('wb_persona_correction')?.value || ''],
-            ['额外补充', document.getElementById('wb_extra')?.value || '']
-        ].filter(([, value]) => value.trim());
+        const modules = Array.from(document.querySelectorAll('input[name="worldModule"]:checked')).map(input => {
+            const config = WORLD_MODULE_CONFIGS.find(item => item.key === input.value);
+            if (!config) return null;
+            const value = document.getElementById(config.textareaId)?.value.trim() || '';
+            if (!value) return null;
+            return [config.label, value];
+        }).filter(Boolean);
         if (!modules.length) {
-            showToast('请至少填写一个世界书模块');
+            showToast('请至少填写一个要扩写的模块要求');
             return;
         }
         const tropeText = document.getElementById('sendTropeToWorld')?.checked ? world.selected.trope.join('、') : '';
@@ -1267,7 +1356,6 @@
 
     async function saveToCloud() {
         const username = getCloudUsernameInput()?.value.trim();
-        const statusNode = getSyncStatusNode();
         const supabaseApi = getSupabaseApi();
         if (!username) {
             showToast('请先填写同步用户名');
@@ -1387,6 +1475,7 @@
         document.querySelectorAll('input[name="aiModule"]').forEach(input => {
             input.addEventListener('change', updateModulePreview);
         });
+        initWorldModuleHints();
     }
 
     function initModalClose() {
@@ -1452,6 +1541,8 @@
         autoSaveWorld,
         saveStoryBranchTemplate,
         toggleAiModules,
+        toggleFoldSection,
+        updateWorldModuleHint,
         toggleJsonPreview,
         toggleRawReplyChar,
         copyRawReply,
