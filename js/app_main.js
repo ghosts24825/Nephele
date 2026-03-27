@@ -241,6 +241,8 @@
                 worldPersona: '',
                 storyPersona: '',
                 storyRequest: '',
+                openingPersonaCards: '',
+                openingWorldbook: '',
                 branchTemplate: DEFAULT_BRANCH_TEMPLATE,
                 rawChar: '',
                 rawWorld: '',
@@ -249,6 +251,8 @@
                 storyHtml: '',
                 storyBranchesHtml: '',
                 storyBranches: [],
+                chapterEntries: [],
+                currentChapterIndex: 0,
                 selectedBranch: '',
                 storyHistory: [],
                 worldModuleDrafts: {},
@@ -310,14 +314,27 @@
     function ensureWorldShape(world) {
         world.ai ||= {};
         world.ai.branchTemplate ||= DEFAULT_BRANCH_TEMPLATE;
+        world.ai.openingPersonaCards ||= '';
+        world.ai.openingWorldbook ||= '';
         world.ai.storyHistory ||= [];
         world.ai.storyBranches ||= [];
+        world.ai.chapterEntries ||= [];
+        world.ai.currentChapterIndex = Number.isInteger(world.ai.currentChapterIndex) ? world.ai.currentChapterIndex : Math.max((world.chapters?.length || 1) - 1, 0);
         world.ai.renderedStory ||= world.ai.rawStory || '';
         world.ai.storyHtml ||= '';
         world.ai.storyBranchesHtml ||= '';
         world.ai.selectedBranch ||= '';
         world.ai.worldModuleDrafts ||= {};
         world.ai.worldModuleSelection ||= {};
+        if (!world.ai.chapterEntries.length && world.ai.renderedStory) {
+            const title = world.chapters?.length ? world.chapters[world.chapters.length - 1] : '\u7b2c\u4e00\u7ae0';
+            world.ai.chapterEntries.push({
+                title,
+                content: world.ai.renderedStory,
+                branches: Array.isArray(world.ai.storyBranches) ? [...world.ai.storyBranches] : [],
+                sourceBranch: ''
+            });
+        }
         applyGlobalInspoToWorld(world);
     }
 
@@ -573,29 +590,56 @@
     function renderReader(world) {
         const reader = document.getElementById('readerContent');
         const chapterBanner = document.getElementById('storyChapterBanner');
+        const chapterSelect = document.getElementById('storyChapterSelect');
+        const continueButton = document.getElementById('btnContinueSelectedBranch');
+        const regenerateButton = document.getElementById('btnRegenerateChapter');
         if (!reader) return;
+        const entries = Array.isArray(world.ai.chapterEntries) ? world.ai.chapterEntries : [];
+        const latestIndex = entries.length ? entries.length - 1 : Math.max((world.chapters?.length || 1) - 1, 0);
+        const currentIndex = Math.min(Math.max(world.ai.currentChapterIndex || 0, 0), latestIndex);
+        const currentEntry = entries[currentIndex] || null;
         if (chapterBanner) {
-            chapterBanner.textContent = world.chapters?.length ? world.chapters[world.chapters.length - 1] : '\u7b2c\u4e00\u7ae0';
+            chapterBanner.textContent = currentEntry?.title || (world.chapters?.[currentIndex] || '\u7b2c\u4e00\u7ae0');
         }
-        if (!world.ai.renderedStory) {
+        if (chapterSelect) {
+            const titles = world.chapters?.length ? world.chapters : ['\u7b2c\u4e00\u7ae0'];
+            chapterSelect.innerHTML = titles.map((title, index) => `<option value="${index}" ${index === currentIndex ? 'selected' : ''}>${escapeHtml(title)}</option>`).join('');
+        }
+        if (regenerateButton) {
+            regenerateButton.disabled = currentIndex !== latestIndex;
+        }
+        if (continueButton) {
+            const canContinue = currentIndex === latestIndex && currentEntry?.branches?.length && world.ai.selectedBranch;
+            continueButton.disabled = !canContinue;
+        }
+        if (!currentEntry?.content) {
             reader.innerHTML = '<div class="reader-empty">\u751f\u6210\u540e\u7684\u6545\u4e8b\u4f1a\u663e\u793a\u5728\u8fd9\u91cc</div>';
             return;
         }
-        reader.innerHTML = `<div class="reader-story-text">${escapeHtml(world.ai.renderedStory)}</div>`;
+        reader.innerHTML = `<div class="reader-story-text">${escapeHtml(currentEntry.content)}</div>`;
     }
 
     function renderStoryBranches(world) {
         const panel = document.getElementById('storyBranchPanel');
         const list = document.getElementById('storyBranchList');
+        const note = document.getElementById('storyBranchHint');
         if (!panel || !list) return;
-        if (!world.ai.storyBranches.length) {
+        const entries = Array.isArray(world.ai.chapterEntries) ? world.ai.chapterEntries : [];
+        const latestIndex = entries.length ? entries.length - 1 : 0;
+        const currentIndex = Math.min(Math.max(world.ai.currentChapterIndex || 0, 0), latestIndex);
+        const currentEntry = entries[currentIndex];
+        const branches = Array.isArray(currentEntry?.branches) ? currentEntry.branches : [];
+        const selectable = currentIndex === latestIndex;
+        if (!branches.length) {
             panel.classList.remove('has-branches');
             list.innerHTML = '';
+            if (note) note.textContent = currentIndex === latestIndex ? '\u672c\u7ae0\u6682\u65e0\u53ef\u7ee7\u7eed\u7684\u5267\u60c5\u5206\u652f' : '\u65e7\u7ae0\u4ec5\u4f9b\u9605\u8bfb\uff0c\u4e0d\u53ef\u7ee7\u7eed\u751f\u6210';
             return;
         }
         panel.classList.add('has-branches');
-        list.innerHTML = world.ai.storyBranches.map((branch, index) => `
-            <button type="button" class="story-branch-btn${world.ai.selectedBranch === branch ? ' active' : ''}" onclick="selectStoryBranch(${index})">
+        if (note) note.textContent = selectable ? '\u5148\u9009\u62e9\u4e00\u4e2a\u5206\u652f\uff0c\u518d\u70b9\u51fb\u4e0b\u65b9\u6309\u94ae\u7ee7\u7eed\u751f\u6210' : '\u65e7\u7ae0\u53ea\u8bfb\u67e5\u770b\uff0c\u53ea\u6709\u5f53\u524d\u6700\u65b0\u7ae0\u53ef\u9009\u62e9\u5206\u652f\u7ee7\u7eed';
+        list.innerHTML = branches.map((branch, index) => `
+            <button type="button" class="story-branch-btn${world.ai.selectedBranch === branch ? ' active' : ''}" onclick="selectStoryBranch(${index})" ${selectable ? '' : 'disabled'}>
                 ${escapeHtml(branch)}
             </button>
         `).join('');
@@ -657,6 +701,10 @@
         document.getElementById('aiWorldPersona').value = world.ai.worldPersona || document.getElementById('aiWorldPersona').value;
         document.getElementById('aiStoryPersona').value = world.ai.storyPersona || document.getElementById('aiStoryPersona').value;
         document.getElementById('aiStoryRequest').value = world.ai.storyRequest || document.getElementById('aiStoryRequest').value;
+        const openingPersonaCards = document.getElementById('openingPersonaCards');
+        const openingWorldbook = document.getElementById('openingWorldbook');
+        if (openingPersonaCards) openingPersonaCards.value = world.ai.openingPersonaCards || '';
+        if (openingWorldbook) openingWorldbook.value = world.ai.openingWorldbook || '';
         document.getElementById('storyBranchTemplate').value = world.ai.branchTemplate || DEFAULT_BRANCH_TEMPLATE;
         WORLD_MODULE_CONFIGS.forEach(config => {
             const textarea = document.getElementById(config.textareaId);
@@ -884,6 +932,8 @@
             world.ai.worldPersona = document.getElementById('aiWorldPersona')?.value || '';
             world.ai.storyPersona = document.getElementById('aiStoryPersona')?.value || '';
             world.ai.storyRequest = document.getElementById('aiStoryRequest')?.value || '';
+            world.ai.openingPersonaCards = document.getElementById('openingPersonaCards')?.value || '';
+            world.ai.openingWorldbook = document.getElementById('openingWorldbook')?.value || '';
             world.ai.branchTemplate = document.getElementById('storyBranchTemplate')?.value || DEFAULT_BRANCH_TEMPLATE;
             WORLD_MODULE_CONFIGS.forEach(config => {
                 const textarea = document.getElementById(config.textareaId);
@@ -1137,6 +1187,77 @@
         ].join("\n")).join("\n\n");
     }
 
+    function collectCharacterText(value, bucket = []) {
+        if (value == null) return bucket;
+        if (typeof value === 'string') {
+            const text = value.trim();
+            if (text) bucket.push(text);
+            return bucket;
+        }
+        if (Array.isArray(value)) {
+            value.forEach(item => collectCharacterText(item, bucket));
+            return bucket;
+        }
+        if (typeof value === 'object') {
+            Object.values(value).forEach(item => collectCharacterText(item, bucket));
+        }
+        return bucket;
+    }
+
+    function inferProtagonistRole(data, fallback = '\u7537\u4e3b\u653b') {
+        const gender = String(data?.basic?.gender || '').trim();
+        const identityText = collectCharacterText(data?.basic?.identity || []).join(' / ');
+        const roleHints = `${gender} ${identityText}`;
+        if (/女/.test(roleHints) && /受/.test(roleHints)) return '\u5973\u4e3b\u53d7';
+        if (/女/.test(roleHints) && /攻/.test(roleHints)) return '\u5973\u4e3b\u653b';
+        if (/男/.test(roleHints) && /受/.test(roleHints)) return '\u7537\u4e3b\u53d7';
+        if (/男/.test(roleHints) && /攻/.test(roleHints)) return '\u7537\u4e3b\u653b';
+        if (/女/.test(roleHints)) return '\u5973\u4e3b';
+        if (/男/.test(roleHints)) return '\u7537\u4e3b';
+        return fallback;
+    }
+
+    function buildProtagonistSummary(data) {
+        const lines = [];
+        const pushLine = (label, value) => {
+            const parts = collectCharacterText(value);
+            if (!parts.length) return;
+            lines.push(`${label}\uff1a${parts.join(' / ')}`);
+        };
+        pushLine('\u5b9a\u4f4d', data?.basic?.identity || data?.basic?.archetype);
+        pushLine('\u793e\u4ea4', data?.basic?.social);
+        pushLine('\u6027\u683c', data?.personality?.core_traits || data?.personality?.romantic_traits);
+        pushLine('\u52a8\u673a', data?.personality?.goals);
+        pushLine('\u4e60\u60ef', data?.behavior?.lifestyle || data?.behavior?.work_behaviors);
+        pushLine('\u80cc\u666f', data?.background?.current || data?.background?.youth || data?.background?.teenage || data?.background?.childhood);
+        pushLine('\u8865\u5145', data?.extra?.additional_notes || data?.extra?.defining_moments || data?.extra?.relationships);
+        const summary = lines.join('\n');
+        if (summary) return summary;
+        const fallback = collectCharacterText(data).slice(0, 6).join(' / ');
+        return fallback || '\u6682\u65e0';
+    }
+
+    function mapRawCharToProtagonists(rawChar, existing = []) {
+        if (!rawChar?.trim()) return existing;
+        try {
+            const parsed = JSON.parse(rawChar);
+            const entries = Object.entries(parsed);
+            if (!entries.length) return existing;
+            return entries.map(([name, data], index) => {
+                const previous = existing[index] || existing.find(item => item.name === name);
+                const displayName = data?.basic?.chinese_name || data?.basic?.char_name || name || previous?.name || `\u4e3b\u89d2 ${index + 1}`;
+                return {
+                    id: previous?.id || generateId(),
+                    name: displayName,
+                    roleType: previous?.roleType || inferProtagonistRole(data, previous?.roleType || '\u7537\u4e3b\u653b'),
+                    summary: buildProtagonistSummary(data)
+                };
+            });
+        } catch {
+            return existing;
+        }
+    }
+
     function normalizeJsonResponse(content) {
         return content.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
     }
@@ -1204,7 +1325,9 @@
         const schemaStr = `{\n  "该主角的名字": {\n${modules.map(module => `    ${MODULE_JSON_SCHEMA[module]}`).join(',\n')}\n  }\n}`;
         const tropeText = document.getElementById('sendTropeToAi')?.checked ? world.selected.trope.join('、') : '';
         const system = `<persona>\n${document.getElementById('aiPersona')?.value || ''}\n</persona>`;
+        const preferredWorldbook = world.worldbook || world.ai.rawWorld || '\u6682\u65e0\u4e16\u754c\u4e66';
         const user = [
+            `<current_worldbook>\n${preferredWorldbook}\n</current_worldbook>`,
             `<generated_worldbook>\n${world.ai.rawWorld || world.worldbook || '暂无世界书'}\n</generated_worldbook>`,
             `<original_protagonists>\n${getProtagonistPrompt(world)}\n</original_protagonists>`,
             `<persona_keywords>\n${world.selected.persona.join('、') || '未选择'}\n</persona_keywords>`,
@@ -1220,7 +1343,10 @@
             statusId: 'aiStatusTextChar',
             after: raw => {
                 const normalized = normalizeJsonResponse(raw);
-                updateCurrentWorld(target => { target.ai.rawChar = normalized; });
+                updateCurrentWorld(target => {
+                    target.ai.rawChar = normalized;
+                    target.ai.openingPersonaCards = normalized;
+                });
                 renderWorldData();
             }
         });
@@ -1263,7 +1389,7 @@
                 const normalized = normalizeYamlResponse(raw);
                 updateCurrentWorld(target => {
                     target.ai.rawWorld = normalized;
-                    target.worldbook = normalized;
+                    target.ai.openingWorldbook = normalized;
                 });
                 renderWorldData();
             }
@@ -1272,12 +1398,16 @@
 
     function buildStoryPrompt(world, isContinuation) {
         const branchTemplate = world.ai.branchTemplate || DEFAULT_BRANCH_TEMPLATE;
+        const preferredWorldbook = world.ai.openingWorldbook || world.ai.rawWorld || world.worldbook || '\u6682\u65e0\u4e16\u754c\u4e66';
+        const protagonistsFormal = world.ai.openingPersonaCards || world.ai.rawChar || getProtagonistPrompt(world) || '\u6682\u65e0\u4e3b\u89d2\u8bbe\u5b9a';
         const selectedBranch = world.ai.selectedBranch || '未选择分支，由你自然续接剧情';
         const storyKeywords = world.selected.storyKeyword.join('、') || '未选择';
         const tropeText = document.getElementById('sendTropeToStory')?.checked ? world.selected.trope.join('、') : '';
         const charJson = world.ai.rawChar || '暂无 AI 人设卡';
         const storyContext = world.ai.renderedStory || '暂无已生成正文';
         return [
+            `<current_worldbook>\n${preferredWorldbook}\n</current_worldbook>`,
+            `<protagonists>\n${protagonistsFormal}\n</protagonists>`,
             `<generated_worldbook>\n${world.ai.rawWorld || world.worldbook || '暂无世界书'}\n</generated_worldbook>`,
             `<generated_character_cards>\n${charJson}\n</generated_character_cards>`,
             `<original_protagonists>\n${getProtagonistPrompt(world)}\n</original_protagonists>`,
@@ -1297,11 +1427,11 @@
             showToast('请先添加至少一个主角');
             return;
         }
-        if (!world.ai.rawWorld && !world.worldbook) {
+        if (!world.ai.openingWorldbook) {
             showToast('请先生成或填写世界书');
             return;
         }
-        if (!world.ai.rawChar) {
+        if (!world.ai.openingPersonaCards) {
             showToast('请先生成人设卡');
             return;
         }
@@ -1323,16 +1453,28 @@
                 const parsed = parseStoryResponse(raw);
                 updateCurrentWorld(target => {
                     ensureWorldShape(target);
+                    const chapterTitle = target.chapters?.length ? target.chapters[target.chapters.length - 1] : '\u7b2c\u4e00\u7ae0';
+                    const chapterEntry = {
+                        title: chapterTitle,
+                        content: parsed.story,
+                        branches: parsed.branches,
+                        sourceBranch: isContinuation ? target.ai.selectedBranch : ''
+                    };
                     target.ai.rawStory = parsed.raw;
                     target.ai.renderedStory = isContinuation ? `${target.ai.renderedStory}\n\n${parsed.story}`.trim() : parsed.story;
                     target.ai.storyHtml = parsed.story;
                     target.ai.storyBranchesHtml = parsed.branchesHtml;
                     target.ai.storyBranches = parsed.branches;
+                    if (isContinuation) target.ai.chapterEntries.push(chapterEntry);
+                    else if (target.ai.chapterEntries.length) target.ai.chapterEntries[target.ai.chapterEntries.length - 1] = chapterEntry;
+                    else target.ai.chapterEntries = [chapterEntry];
+                    target.ai.currentChapterIndex = Math.max(target.ai.chapterEntries.length - 1, 0);
                     if (isContinuation) {
                         target.ai.storyHistory.push({ branch: target.ai.selectedBranch, appended: parsed.story });
                     }
                     target.ai.selectedBranch = '';
                 });
+                switchWorkspacePanel('story');
                 renderWorldData();
             }
         });
@@ -1340,18 +1482,91 @@
 
     function selectStoryBranch(index) {
         const world = getCurrentWorld();
-        if (!world?.ai.storyBranches?.[index]) return;
+        const entries = Array.isArray(world?.ai?.chapterEntries) ? world.ai.chapterEntries : [];
+        const latestIndex = Math.max(entries.length - 1, 0);
+        if ((world?.ai?.currentChapterIndex || 0) !== latestIndex) return;
+        const branches = entries[latestIndex]?.branches || world?.ai?.storyBranches || [];
+        if (!branches[index]) return;
+        updateCurrentWorld(target => {
+            target.ai.selectedBranch = branches[index];
+        });
+        renderWorldData();
+        showToast('\u5df2\u9009\u4e2d\u5267\u60c5\u5206\u652f');
+    }
+
+    function changeStoryChapter(index) {
+        const world = getCurrentWorld();
+        const entries = Array.isArray(world?.ai?.chapterEntries) ? world.ai.chapterEntries : [];
+        const nextIndex = Math.min(Math.max(Number(index) || 0, 0), Math.max(entries.length - 1, 0));
+        updateCurrentWorld(target => {
+            target.ai.currentChapterIndex = nextIndex;
+            if (nextIndex !== Math.max((target.ai.chapterEntries?.length || 1) - 1, 0)) {
+                target.ai.selectedBranch = '';
+            }
+        });
+        renderWorldData();
+    }
+
+    function continueStoryFromSelectedBranch() {
+        const world = getCurrentWorld();
+        const entries = Array.isArray(world?.ai?.chapterEntries) ? world.ai.chapterEntries : [];
+        const latestIndex = Math.max(entries.length - 1, 0);
+        if ((world?.ai?.currentChapterIndex || 0) !== latestIndex) {
+            showToast('\u53ea\u6709\u6700\u65b0\u7ae0\u53ef\u7ee7\u7eed\u751f\u6210');
+            return;
+        }
+        if (!world.ai.selectedBranch) {
+            showToast('\u8bf7\u5148\u9009\u62e9\u4e00\u4e2a\u5267\u60c5\u5206\u652f');
+            return;
+        }
         const nextChapterNumber = (world.chapters?.length || 0) + 1;
         const nextChapterName = '\u7b2c' + nextChapterNumber + '\u7ae0';
         updateCurrentWorld(target => {
-            target.ai.selectedBranch = target.ai.storyBranches[index];
             target.chapters ||= [];
             target.chapters.push(nextChapterName);
+            target.ai.currentChapterIndex = target.chapters.length - 1;
         });
-        switchWorkspacePanel('story');
-        renderWorldData();
-        showToast('\u5df2\u9009\u62e9\u5267\u60c5\u5206\u652f\uff0c\u6b63\u5728\u751f\u6210' + nextChapterName);
+        showToast('\u5c06\u6309\u9009\u4e2d\u5206\u652f\u7ee7\u7eed\u751f\u6210' + nextChapterName);
         generateStoryWithAI();
+    }
+
+    function regenerateCurrentChapter() {
+        const world = getCurrentWorld();
+        const entries = Array.isArray(world?.ai?.chapterEntries) ? world.ai.chapterEntries : [];
+        const currentIndex = world?.ai?.currentChapterIndex || 0;
+        const latestIndex = Math.max(entries.length - 1, 0);
+        const latestEntry = entries[latestIndex];
+        if (currentIndex !== latestIndex) {
+            showToast('\u6682\u53ea\u652f\u6301\u91cd\u65b0\u751f\u6210\u6700\u65b0\u7ae0');
+            return;
+        }
+        if (!latestEntry?.content) {
+            showToast('\u5f53\u524d\u7ae0\u6682\u65e0\u53ef\u91cd\u65b0\u751f\u6210\u7684\u5185\u5bb9');
+            return;
+        }
+        updateCurrentWorld(target => {
+            const previousEntries = (target.ai.chapterEntries || []).slice(0, -1);
+            target.ai.chapterEntries = previousEntries;
+            target.ai.renderedStory = previousEntries.map(item => item.content).filter(Boolean).join('\n\n');
+            target.ai.storyBranches = previousEntries.length ? [...(previousEntries[previousEntries.length - 1].branches || [])] : [];
+            target.ai.currentChapterIndex = Math.max(previousEntries.length - 1, 0);
+            target.ai.selectedBranch = latestEntry.sourceBranch || '';
+            target.chapters = (target.chapters || ['\u7b2c\u4e00\u7ae0']).slice(0, Math.max((target.chapters || []).length - 1, 1));
+        });
+        renderWorldData();
+        generateStoryWithAI();
+    }
+
+    function copyReaderStory() {
+        const world = getCurrentWorld();
+        const entries = Array.isArray(world?.ai?.chapterEntries) ? world.ai.chapterEntries : [];
+        const currentIndex = Math.min(Math.max(world?.ai?.currentChapterIndex || 0, 0), Math.max(entries.length - 1, 0));
+        const currentEntry = entries[currentIndex];
+        if (!currentEntry?.content) {
+            showToast('没有可复制的故事');
+            return;
+        }
+        navigator.clipboard.writeText(currentEntry.content).then(() => showToast('已复制正文')).catch(() => showToast('复制失败'));
     }
 
     async function saveToCloud() {
@@ -1551,6 +1766,9 @@
         generateWorldbookWithAI,
         generateStoryWithAI,
         selectStoryBranch,
+        changeStoryChapter,
+        continueStoryFromSelectedBranch,
+        regenerateCurrentChapter,
         openSettingsModal,
         closeSettingsModal,
         toggleTheme,

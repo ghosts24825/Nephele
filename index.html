@@ -422,6 +422,30 @@
                 <section class="card-section">
                     <div class="section-header">
                         <span class="section-icon">&#10022;</span>
+                        <h3>&#29983;&#25104;&#24320;&#22836;&#19987;&#29992;&#20154;&#35774;&#21345;</h3>
+                    </div>
+
+                    <div class="ai-block">
+                        <label class="ai-block-label"><span class="ai-tag-badge">opening</span> &#29992;&#20110;&#29983;&#25104;&#25925;&#20107;&#24320;&#22836;&#30340;&#19987;&#29992;&#20154;&#35774;&#21345;&#21103;&#26412;</label>
+                        <textarea id="openingPersonaCards" rows="10" oninput="saveAiDrafts()" placeholder="AI &#29983;&#25104;&#20154;&#35774;&#21345;&#21518;&#20250;&#33258;&#21160;&#21516;&#27493;&#21040;&#36825;&#37324;&#65292;&#20320;&#20063;&#21487;&#20197;&#22312;&#36825;&#37324;&#25163;&#21160;&#20462;&#25913;&#12290;"></textarea>
+                    </div>
+                </section>
+
+                <section class="card-section">
+                    <div class="section-header">
+                        <span class="section-icon">&#10022;</span>
+                        <h3>&#29983;&#25104;&#24320;&#22836;&#19987;&#29992;&#19990;&#30028;&#20070;</h3>
+                    </div>
+
+                    <div class="ai-block">
+                        <label class="ai-block-label"><span class="ai-tag-badge">opening</span> &#29992;&#20110;&#29983;&#25104;&#25925;&#20107;&#24320;&#22836;&#30340;&#19987;&#29992;&#19990;&#30028;&#20070;&#21103;&#26412;</label>
+                        <textarea id="openingWorldbook" rows="10" oninput="saveAiDrafts()" placeholder="AI &#29983;&#25104;&#19990;&#30028;&#20070;&#21518;&#20250;&#33258;&#21160;&#21516;&#27493;&#21040;&#36825;&#37324;&#65292;&#20320;&#20063;&#21487;&#20197;&#22312;&#36825;&#37324;&#25163;&#21160;&#20462;&#25913;&#12290;"></textarea>
+                    </div>
+                </section>
+
+                <section class="card-section">
+                    <div class="section-header">
+                        <span class="section-icon">&#10022;</span>
                         <h3>AI &#29983;&#25104;&#25925;&#20107;&#24320;&#22836;</h3>
                     </div>
 
@@ -466,11 +490,17 @@
             <div class="workspace-panel view-hidden" id="panel-story">
                 <section class="card-section">
                     <div class="story-reader-header">
-                        <div>
-                            <div class="story-chapter-banner" id="storyChapterBanner">&#31532;&#19968;&#31456;</div>
-                            <h3>&#38405;&#35835;&#25925;&#20107;</h3>
+                        <div class="story-reader-toolbar">
+                            <div>
+                                <div class="story-chapter-banner" id="storyChapterBanner">&#31532;&#19968;&#31456;</div>
+                                <h3>&#38405;&#35835;&#25925;&#20107;</h3>
+                            </div>
+                            <div class="story-reader-tools">
+                                <select id="storyChapterSelect" onchange="changeStoryChapter(this.value)"></select>
+                                <button class="btn-header-small" type="button" id="btnRegenerateChapter" onclick="regenerateCurrentChapter()">&#37325;&#26032;&#29983;&#25104;&#26412;&#31456;</button>
+                                <button class="btn-copy-small" type="button" onclick="copyReaderStory()">&#22797;&#21046;&#27491;&#25991;</button>
+                            </div>
                         </div>
-                        <button class="btn-copy-small" type="button" onclick="copyReaderStory()">&#22797;&#21046;&#27491;&#25991;</button>
                     </div>
                     <div class="story-reader-content" id="readerContent"></div>
                 </section>
@@ -479,10 +509,13 @@
                     <div class="story-branch-head">
                         <div>
                             <h3>&#21095;&#24773;&#20998;&#25903;</h3>
-                            <div class="story-branch-note">&#36873;&#25321;&#19968;&#20010;&#20998;&#25903;&#32487;&#32493;&#29983;&#25104;&#21518;&#32493;&#20869;&#23481;</div>
+                            <div class="story-branch-note" id="storyBranchHint">&#20808;&#36873;&#25321;&#19968;&#20010;&#20998;&#25903;&#65292;&#20877;&#30830;&#35748;&#32487;&#32493;&#29983;&#25104;</div>
                         </div>
                     </div>
                     <div class="story-branch-list" id="storyBranchList"></div>
+                    <div class="story-branch-actions">
+                        <button class="btn-ai-generate" id="btnContinueSelectedBranch" type="button" onclick="continueStoryFromSelectedBranch()" disabled>&#25353;&#36873;&#20013;&#20998;&#25903;&#32487;&#32493;&#29983;&#25104;</button>
+                    </div>
                 </section>
             </div>
         </main>

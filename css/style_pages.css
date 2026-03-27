@@ -551,6 +551,37 @@
     background: var(--primary-light);
 }
 
+.story-reader-toolbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    width: 100%;
+}
+
+.story-reader-tools {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+#storyChapterSelect {
+    min-width: 132px;
+}
+
+.story-branch-actions {
+    margin-top: 14px;
+}
+
+.story-branch-actions .btn-ai-generate {
+    width: 100%;
+}
+
+.story-branch-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
 /* =========================================================
    Forms / helpers
    ========================================================= */
@@ -1007,6 +1038,8 @@
     .parsed-char-summary,
     .ai-config-grid,
     .api-key-wrap,
+    .story-reader-toolbar,
+    .story-reader-tools,
     .story-reader-header,
     .story-branch-head,
     .settings-sync-actions,
