@@ -1,0 +1,137 @@
+/* Small utilities and extracted one-off layout helpers. */
+
+/* =========================================================
+   从 HTML 提取的内联样式
+   ========================================================= */
+
+/* 视图容器默认隐藏 */
+.view-hidden {
+    display: none;
+}
+
+/* 世界书文本区域最小高度 */
+#worldWorldbook {
+    min-height: 120px;
+}
+
+/* 灵感池底部间距 */
+.inspo-pool-box-spaced {
+    margin-bottom: 16px;
+}
+
+/* 内联 flex 标签样式 */
+.label-inline-flex {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 可点击的标签 */
+.ai-block-label-clickable {
+    cursor: pointer;
+}
+
+/* 默认隐藏的容器 */
+.container-hidden {
+    display: none;
+}
+
+/* 主题切换文本间距 */
+.theme-switch-text {
+    margin-left: 10px;
+}
+
+/* 导入文本区域样式 */
+#importTextarea {
+    width: 100%;
+    min-height: 160px;
+}
+
+/* 解析角色卡样式 */
+.parsed-char-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--card-bg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.parsed-char-header {
+    padding: 10px 15px;
+    background: var(--panel-bg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.parsed-char-body {
+    padding: 15px;
+    font-family: Consolas, monospace;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    color: var(--text-main);
+    max-height: 400px;
+    overflow-y: auto;
+    background: var(--card-bg);
+}
+
+/* 暗色主题下的解析角色卡 */
+[data-theme="dark"] .parsed-char-card {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .parsed-char-header {
+    background: var(--panel-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .parsed-char-body {
+    background: var(--card-bg);
+    color: var(--text-main);
+}
+
+
+/* =========================================================
+   显示/隐藏工具类
+   ========================================================= */
+
+/* 显示元素 */
+.view-visible {
+    display: block !important;
+}
+
+/* 内联显示 */
+.view-inline {
+    display: inline-block !important;
+}
+
+/* Flex 显示 */
+.view-flex {
+    display: flex !important;
+}
+
+/* JSON 预览默认隐藏 */
+#moduleJsonPreview {
+    display: none;
+}
+
+#moduleJsonPreview:not(.view-hidden) {
+    display: block;
+}
+
+/* AI 回复区域的显示控制 */
+.ai-raw-reply-section:not(.view-hidden) {
+    display: block;
+}
+
+/* 容器隐藏时的显示控制 */
+.container-hidden {
+    display: none !important;
+}
+
+/* 确保视图容器正确显示 */
+.view-container:not(.view-hidden) {
+    display: block;
+}

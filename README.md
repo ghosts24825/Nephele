@@ -6,9 +6,13 @@
 
 - `index.html`：页面结构与主要界面入口
 - `css/style.css`：基础样式与全局响应式规则
-- `css/style_bookshelf.css`：书架页样式
-- `css/style_pages.css`：创作页、设置弹窗等页面样式
-- `js/app_main.js`：核心交互、数据状态与本地存储
+- `css/style_pages.css`：启动页、书架页、工作区与设置弹窗样式
+- `js/app_main.js`：启动流程、页面切换与语义化事件绑定
+- `js/state.js`：存储键、世界数据、迁移与全局灵感池状态
+- `js/render.js`：书架、主角、灵感标签、阅读器与 AI 输出渲染
+- `js/ai-workflow.js`：人设卡、世界书生成与通用 AI 生成流程
+- `js/story.js`：故事生成、章节、分支与阅读复制逻辑
+- `js/settings.js`：设置弹窗、主题、AI 供应商、云同步与本地备份逻辑
 - `js/ai-service.js`：AI 请求相关逻辑
 - `js/supabase-client.js`：Supabase 云同步逻辑
 - `.nojekyll`：保证 GitHub Pages 按静态资源原样部署

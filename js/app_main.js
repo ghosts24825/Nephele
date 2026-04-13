@@ -1,452 +1,42 @@
 ﻿(() => {
     'use strict';
 
-    const STORAGE = {
-        worlds: 'generator_worlds_v4',
-        currentWorld: 'generator_current_world_v4',
-        theme: 'generator_theme_v1',
-        cloudUsername: 'generator_cloud_username_v1',
-        globalInspo: 'generator_global_inspo_v1'
-    };
-
-    const DEFAULT_BRANCH_TEMPLATE = `你需要生成以<branches></branches>包裹的选项分支，每个选项限制在300字内:
-
-<details>
-<summary>𓋫 𓏴𓏴 𓏵‧₊🎮剧情分支₊‧𓏵 𓏴𓏴 𓋫</summary>
-<branches>
-（每行生成一个选项，一共6个，包含推动剧情向最合理情况发展、剧情转折、将剧情逐渐推向nsfw的选项、快速推进或时间转换的、搞笑/抽象/出乎意料的选项）
-</branches>
-</details>
-
-说明:
-- 行动主体必须写明姓名，采用第三人称，主体可以为不同角色
-- 选项必须保持和前文的连贯性，不破坏叙事体验
-- 选项不需要加序号、项目符号等
-- 输出格式（必须严格执行HTML嵌套）：
-  - <branches> 标签必须且只能存在于 <details> 内部
-  - 禁止遗漏 <details> 的闭合标签
-- 当{{getvar::神秘补丁5}} {{getvar::神秘补丁6}}激活时，遵守相关要求
-
-{{setvar::branches::branches}}`;
-
-    const DEFAULT_INSPO = {
-        persona: [],
-        trope: [],
-        storyKeyword: ['雨夜', '初雪', '意外相遇', '久别重逢', '酒吧', '街角', '失忆', '醉酒', '擦肩而过', '危机', '暗巷', '宴会', '契约', '误会', '争吵', '救美', '被困', '电梯故障', '病房', '相亲', '车祸', '晚宴逃跑', '错认', '停电', '真心话大冒险']
-    };
-
-    const MODULE_GUIDE_LABELS = {
-        basic: '基础档案',
-        background: '成长经历',
-        appearance: '外貌造型',
-        personality: '性格特质',
-        behavior: '行为习惯',
-        speech: '说话风格',
-        extra: '深层细节',
-        nsfw: '成人向信息'
-    };
-
-    const MODULE_JSON_SCHEMA = {
-        basic: '"basic": {\n      "char_name": "",\n      "chinese_name": "",\n      "nickname": "",\n      "age": "",\n      "birthday_date": "",\n      "birthday_zodiac": "",\n      "gender": "",\n      "height": "",\n      "identity": [],\n      "archetype": [],\n      "social": []\n    }',
-        background: '"background": {\n      "childhood_range": "0-12岁",\n      "childhood": [],\n      "teenage_range": "13-18岁",\n      "teenage": [],\n      "youth_range": "19-24岁",\n      "youth": [],\n      "current_range": "",\n      "current": []\n    }',
-        appearance: '"appearance": {\n      "hair": "",\n      "eyes": "",\n      "skin": "",\n      "face_style": "",\n      "build": [],\n      "attire_formal": "",\n      "attire_business": "",\n      "attire_casual": "",\n      "attire_home": ""\n    }',
-        personality: '"personality": {\n      "core_traits": [],\n      "romantic_traits": [],\n      "weakness": [],\n      "likes": [],\n      "dislikes": [],\n      "goals": []\n    }',
-        behavior: '"behavior": {\n      "lifestyle": [],\n      "work_behaviors": [],\n      "emotional_angry": "",\n      "emotional_happy": "",\n      "emotional_sad": "",\n      "boundaries": [],\n      "work_skills": [],\n      "life_skills": [],\n      "hobby_skills": []\n    }',
-        speech: '"speech": {\n      "speech_style": "",\n      "speech_reasoning": "",\n      "speech_accent": "",\n      "speech_online": ""\n    }',
-        extra: '"extra": {\n      "additional_notes": "",\n      "catchphrases": [],\n      "mannerisms": [],\n      "trauma": [],\n      "values": [],\n      "conflicts": [],\n      "secrets": [],\n      "relationships": [],\n      "defining_moments": []\n    }',
-        nsfw: '"nsfw": {\n      "experiences": "",\n      "sexual_organs": "",\n      "sexual_orientation": "",\n      "sexual_role": [],\n      "sexual_habits": [],\n      "kinks": [],\n      "limits": []\n    }'
-    };
-
-    const WORLD_MODULE_CONFIGS = [
-        {
-            key: 'era_background',
-            textareaId: 'wb_era_background',
-            label: '时代背景',
-            hintId: 'wb_era_background_hint',
-            defaultHint: '请明确小世界所处的时代、社会环境、发展水平与整体氛围。'
-        },
-        {
-            key: 'special_settings',
-            textareaId: 'wb_special_settings',
-            label: '特殊设定',
-            hintId: 'wb_special_settings_hint',
-            defaultHint: '请补充这个世界独有的规则、力量体系、文化习俗、限制条件或隐藏机制。'
-        },
-        {
-            key: 'npcs',
-            textareaId: 'wb_npcs',
-            label: '重要配角',
-            hintId: 'wb_npcs_hint',
-            defaultHint: '请规划与主角关系密切、能推动剧情的重要角色或势力。'
-        },
-        {
-            key: 'persona_correction',
-            textareaId: 'wb_persona_correction',
-            label: '人设修正',
-            hintId: 'wb_persona_correction_hint',
-            defaultHint: '如果主角设定与世界存在冲突，请在这里提示 AI 做兼容与补强。'
-        },
-        {
-            key: 'extra',
-            textareaId: 'wb_extra',
-            label: '额外补充',
-            hintId: 'wb_extra_hint',
-            defaultHint: '补充任何你希望世界书额外覆盖的写作重点、主题或氛围要求。'
-        }
-    ];
+    const {
+        STORAGE,
+        DEFAULT_BRANCH_TEMPLATE,
+        DEFAULT_INSPO,
+        MODULE_GUIDE_LABELS,
+        MODULE_JSON_SCHEMA,
+        WORLD_MODULE_CONFIGS,
+        applyGlobalInspoToWorld,
+        createDefaultProtagonist,
+        createDefaultWorld,
+        ensureWorldShape,
+        ensureWorldSystem,
+        escapeHtml,
+        generateId,
+        getCurrentWorld,
+        getCurrentWorldId,
+        getGlobalInspo,
+        getWorlds,
+        migrateGlobalInspoFromWorlds,
+        normalizeCloudPayload,
+        readJson,
+        saveGlobalInspo,
+        saveWorlds,
+        scrollResultIntoView,
+        setCurrentWorldId,
+        showToast,
+        updateCurrentWorld,
+        updateGlobalInspo
+    } = window.StateModule;
 
     let currentImportType = null;
-    let currentStreamingTarget = null;
     let currentWorkspacePanel = 'original';
-
-    function readJson(key, fallback) {
-        try {
-            const raw = localStorage.getItem(key);
-            return raw ? JSON.parse(raw) : fallback;
-        } catch {
-            return fallback;
-        }
-    }
-
-    function writeJson(key, value) {
-        localStorage.setItem(key, JSON.stringify(value));
-    }
-
-    function createDefaultGlobalInspo() {
-        return {
-            pools: { persona: [], trope: [], storyKeyword: [] },
-            selected: { persona: [], trope: [], storyKeyword: [] }
-        };
-    }
-
-    function normalizeInspoShape(value) {
-        const fallback = createDefaultGlobalInspo();
-        const pools = value?.pools || {};
-        const selected = value?.selected || {};
-        return {
-            pools: {
-                persona: Array.isArray(pools.persona) ? pools.persona : [],
-                trope: Array.isArray(pools.trope) ? pools.trope : [],
-                storyKeyword: Array.isArray(pools.storyKeyword) ? pools.storyKeyword : []
-            },
-            selected: {
-                persona: Array.isArray(selected.persona) ? selected.persona : [],
-                trope: Array.isArray(selected.trope) ? selected.trope : [],
-                storyKeyword: Array.isArray(selected.storyKeyword) ? selected.storyKeyword : []
-            }
-        };
-    }
-
-    function getGlobalInspo() {
-        return normalizeInspoShape(readJson(STORAGE.globalInspo, createDefaultGlobalInspo()));
-    }
-
-    function saveGlobalInspo(globalInspo) {
-        writeJson(STORAGE.globalInspo, normalizeInspoShape(globalInspo));
-    }
-
-    function applyGlobalInspoToWorld(world, globalInspo = getGlobalInspo()) {
-        const normalized = normalizeInspoShape(globalInspo);
-        world.pools = {
-            persona: [...normalized.pools.persona],
-            trope: [...normalized.pools.trope],
-            storyKeyword: [...normalized.pools.storyKeyword]
-        };
-        world.selected = {
-            persona: [...normalized.selected.persona],
-            trope: [...normalized.selected.trope],
-            storyKeyword: [...normalized.selected.storyKeyword]
-        };
-    }
-
-    function syncGlobalInspoToAllWorlds(globalInspo = getGlobalInspo()) {
-        const worlds = getWorlds();
-        Object.values(worlds).forEach(world => {
-            ensureWorldShape(world);
-            applyGlobalInspoToWorld(world, globalInspo);
-        });
-        saveWorlds(worlds);
-        return worlds;
-    }
-
-    function migrateGlobalInspoFromWorlds() {
-        const existing = getGlobalInspo();
-        const hasExisting = Object.values(existing.pools).some(items => items.length) || Object.values(existing.selected).some(items => items.length);
-        if (hasExisting) {
-            syncGlobalInspoToAllWorlds(existing);
-            return;
-        }
-
-        const worlds = getWorlds();
-        const merged = createDefaultGlobalInspo();
-        Object.values(worlds).forEach(world => {
-            ['persona', 'trope', 'storyKeyword'].forEach(category => {
-                const poolItems = Array.isArray(world?.pools?.[category]) ? world.pools[category] : [];
-                const selectedItems = Array.isArray(world?.selected?.[category]) ? world.selected[category] : [];
-                merged.pools[category] = Array.from(new Set([...merged.pools[category], ...poolItems]));
-                merged.selected[category] = Array.from(new Set([...merged.selected[category], ...selectedItems]));
-            });
-        });
-        saveGlobalInspo(merged);
-        syncGlobalInspoToAllWorlds(merged);
-    }
-
-    function updateGlobalInspo(mutator) {
-        const globalInspo = getGlobalInspo();
-        mutator(globalInspo);
-        saveGlobalInspo(globalInspo);
-        syncGlobalInspoToAllWorlds(globalInspo);
-        return globalInspo;
-    }
-
-    function escapeHtml(value) {
-        return String(value ?? '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
-    }
-
-    function generateId() {
-        return `id_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    }
-
-    function showToast(message, duration = 2200) {
-        const toast = document.getElementById('toast');
-        if (!toast) return;
-        toast.textContent = message;
-        toast.classList.add('show');
-        window.setTimeout(() => toast.classList.remove('show'), duration);
-    }
-
-    function scrollResultIntoView(outputId) {
-        const output = document.getElementById(outputId);
-        const resultSection = output?.closest('.ai-raw-reply-section') || output;
-        if (!resultSection) return;
-        window.setTimeout(() => {
-            resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 120);
-    }
-
-    function createDefaultWorld(name = '世界 1') {
-        return {
-            name,
-            worldbook: '',
-            chapters: ['第一章'],
-            protagonists: [],
-            pools: { persona: [], trope: [], storyKeyword: [] },
-            selected: { persona: [], trope: [], storyKeyword: [] },
-            ai: {
-                persona: '',
-                worldPersona: '',
-                storyPersona: '',
-                storyRequest: '',
-                openingPersonaCards: '',
-                openingWorldbook: '',
-                branchTemplate: DEFAULT_BRANCH_TEMPLATE,
-                rawChar: '',
-                rawWorld: '',
-                rawStory: '',
-                renderedStory: '',
-                storyHtml: '',
-                storyBranchesHtml: '',
-                storyBranches: [],
-                chapterEntries: [],
-                currentChapterIndex: 0,
-                selectedBranch: '',
-                storyHistory: [],
-                worldModuleDrafts: {},
-                worldModuleSelection: {}
-            }
-        };
-    }
-
-    function createDefaultProtagonist(index) {
-        return { id: generateId(), name: `\u4e3b\u89d2 ${index}`, roleType: '\u7537\u4e3b\u653b', summary: '' };
-    }
-
-    function getWorlds() {
-        return readJson(STORAGE.worlds, {});
-    }
-
-    function saveWorlds(worlds) {
-        writeJson(STORAGE.worlds, worlds);
-    }
-
-    function getCurrentWorldId() {
-        return localStorage.getItem(STORAGE.currentWorld) || '';
-    }
-
-    function setCurrentWorldId(worldId) {
-        localStorage.setItem(STORAGE.currentWorld, worldId);
-    }
-
-    function getCurrentWorld() {
-        return getWorlds()[getCurrentWorldId()] || null;
-    }
-
-    function updateCurrentWorld(mutator) {
-        const worlds = getWorlds();
-        const worldId = getCurrentWorldId();
-        const world = worlds[worldId];
-        if (!world) return null;
-        mutator(world, worlds);
-        saveWorlds(worlds);
-        return world;
-    }
-
-    function ensureWorldSystem() {
-        const worlds = getWorlds();
-        const ids = Object.keys(worlds);
-        if (!ids.length) {
-            const worldId = generateId();
-            worlds[worldId] = createDefaultWorld();
-            applyGlobalInspoToWorld(worlds[worldId]);
-            saveWorlds(worlds);
-            setCurrentWorldId(worldId);
-            return;
-        }
-        if (!worlds[getCurrentWorldId()]) {
-            setCurrentWorldId(ids[0]);
-        }
-    }
-
-    function ensureWorldShape(world) {
-        world.ai ||= {};
-        world.ai.branchTemplate ||= DEFAULT_BRANCH_TEMPLATE;
-        world.ai.openingPersonaCards ||= '';
-        world.ai.openingWorldbook ||= '';
-        world.ai.storyHistory ||= [];
-        world.ai.storyBranches ||= [];
-        world.ai.chapterEntries ||= [];
-        world.ai.currentChapterIndex = Number.isInteger(world.ai.currentChapterIndex) ? world.ai.currentChapterIndex : Math.max((world.chapters?.length || 1) - 1, 0);
-        world.ai.renderedStory ||= world.ai.rawStory || '';
-        world.ai.storyHtml ||= '';
-        world.ai.storyBranchesHtml ||= '';
-        world.ai.selectedBranch ||= '';
-        world.ai.worldModuleDrafts ||= {};
-        world.ai.worldModuleSelection ||= {};
-        if (!world.ai.chapterEntries.length && world.ai.renderedStory) {
-            const title = world.chapters?.length ? world.chapters[world.chapters.length - 1] : '\u7b2c\u4e00\u7ae0';
-            world.ai.chapterEntries.push({
-                title,
-                content: world.ai.renderedStory,
-                branches: Array.isArray(world.ai.storyBranches) ? [...world.ai.storyBranches] : [],
-                sourceBranch: ''
-            });
-        }
-        applyGlobalInspoToWorld(world);
-    }
-
-    function normalizeCloudPayload(data) {
-        if (data?.worlds) {
-            const modernWorlds = parseJsonMaybe(data.worlds, {});
-            let mergedWorlds = { ...modernWorlds };
-            let currentWorld = data.currentWorld || '';
-
-            if (data?.ss_worlds) {
-                const legacyPayload = normalizeCloudPayload({
-                    ss_worlds: data.ss_worlds,
-                    ss_current_world_v2: data.ss_current_world_v2,
-                    ss_current_world: data.ss_current_world,
-                    ss_theme_v1: data.ss_theme_v1,
-                    globalInspo: data.globalInspo
-                });
-                const legacyWorlds = parseJsonMaybe(legacyPayload?.worlds, {});
-                mergedWorlds = { ...legacyWorlds, ...modernWorlds };
-                currentWorld = currentWorld || legacyPayload?.currentWorld || '';
-            }
-
-            if (data.globalInspo) {
-                try {
-                    saveGlobalInspo(typeof data.globalInspo === 'string' ? JSON.parse(data.globalInspo) : data.globalInspo);
-                } catch {}
-            }
-            return {
-                worlds: JSON.stringify(mergedWorlds),
-                currentWorld: mergedWorlds[currentWorld] ? currentWorld : (Object.keys(mergedWorlds)[0] || ''),
-                theme: data?.theme || data?.generator_theme_v1 || data?.ss_theme_v1 || localStorage.getItem(STORAGE.theme) || 'light',
-                globalInspo: data?.globalInspo
-            };
-        }
-
-        function parseJsonMaybe(value, fallback) {
-            if (value == null || value === '') return fallback;
-            if (typeof value !== 'string') return value;
-            try {
-                return JSON.parse(value);
-            } catch {
-                return fallback;
-            }
-        }
-
-        if (data?.ss_worlds) {
-            const legacyWorlds = parseJsonMaybe(data.ss_worlds, {});
-            const legacyCurrentWorld =
-                data.ss_current_world_v2 ||
-                data.ss_current_world ||
-                Object.keys(legacyWorlds)[0] ||
-                '';
-            const normalizedWorlds = {};
-
-            Object.entries(legacyWorlds || {}).forEach(([worldId, legacyWorld]) => {
-                const wrappedWorld = createDefaultWorld(legacyWorld?.name || '云端世界');
-                wrappedWorld.worldbook = legacyWorld?.worldbook || legacyWorld?.setting || '';
-                wrappedWorld.chapters = Array.isArray(legacyWorld?.chapters) && legacyWorld.chapters.length
-                    ? legacyWorld.chapters
-                    : ['第1章'];
-                wrappedWorld.protagonists = Array.isArray(legacyWorld?.protagonists)
-                    ? legacyWorld.protagonists.map((item, index) => ({
-                        id: item?.id || generateId(),
-                        name: item?.name || `主角 ${index + 1}`,
-                        roleType: item?.roleType || item?.role || '男主攻',
-                        summary: item?.summary || item?.brief || ''
-                    }))
-                    : [];
-                wrappedWorld.pools = {
-                    persona: Array.isArray(legacyWorld?.pools?.persona) ? legacyWorld.pools.persona : [],
-                    trope: Array.isArray(legacyWorld?.pools?.trope) ? legacyWorld.pools.trope : [],
-                    storyKeyword: Array.isArray(legacyWorld?.pools?.storyKeyword) ? legacyWorld.pools.storyKeyword : []
-                };
-                wrappedWorld.selected = {
-                    persona: Array.isArray(legacyWorld?.selected?.persona) ? legacyWorld.selected.persona : [],
-                    trope: Array.isArray(legacyWorld?.selected?.trope)
-                        ? legacyWorld.selected.trope
-                        : (Array.isArray(legacyWorld?.selectedInspos) ? legacyWorld.selectedInspos : []),
-                    storyKeyword: Array.isArray(legacyWorld?.selected?.storyKeyword)
-                        ? legacyWorld.selected.storyKeyword
-                        : (Array.isArray(legacyWorld?.selectedStoryKeywords) ? legacyWorld.selectedStoryKeywords : [])
-                };
-                wrappedWorld.ai = { ...wrappedWorld.ai, ...(legacyWorld?.ai || {}) };
-                ensureWorldShape(wrappedWorld);
-                normalizedWorlds[worldId] = wrappedWorld;
-            });
-
-            return {
-                worlds: JSON.stringify(normalizedWorlds),
-                currentWorld: normalizedWorlds[legacyCurrentWorld] ? legacyCurrentWorld : (Object.keys(normalizedWorlds)[0] || ''),
-                theme: data?.theme || data?.generator_theme_v1 || data?.ss_theme_v1 || localStorage.getItem(STORAGE.theme) || 'light',
-                globalInspo: data?.globalInspo
-            };
-        }
-
-        const worldId = generateId();
-        const wrappedWorld = createDefaultWorld(data?.name || '云端导入世界');
-        wrappedWorld.worldbook = data?.worldbook || '';
-        wrappedWorld.chapters = Array.isArray(data?.chapters) && data.chapters.length ? data.chapters : ['第一章'];
-        wrappedWorld.protagonists = Array.isArray(data?.protagonists) ? data.protagonists : [];
-        wrappedWorld.pools = data?.pools || wrappedWorld.pools;
-        wrappedWorld.selected = data?.selected || wrappedWorld.selected;
-        wrappedWorld.ai = { ...wrappedWorld.ai, ...(data?.ai || {}) };
-        ensureWorldShape(wrappedWorld);
-
-        return {
-            worlds: JSON.stringify({ [worldId]: wrappedWorld }),
-            currentWorld: worldId,
-            theme: data?.theme || localStorage.getItem(STORAGE.theme) || 'light',
-            globalInspo: data?.globalInspo
-        };
-    }
+    let settingsActions = null;
+    let storyActions = null;
+    let renderActions = null;
+    let aiActions = null;
 
     function togglePage(showWorkspace) {
         document.getElementById('page-start')?.classList.add('page-hidden');
@@ -489,247 +79,11 @@
         return typeof SupabaseClient !== 'undefined' ? SupabaseClient : window.SupabaseClient;
     }
 
-    function renderBookshelf() {
-        const worlds = getWorlds();
-        const grid = document.getElementById('bookGrid');
-        if (!grid) return;
-
-        grid.innerHTML = `
-            <div class="book-card book-card-new" onclick="createNewWorld()">
-                <div class="book-card-inner">
-                    <div class="book-icon">＋</div>
-                    <div class="book-title">新建世界</div>
-                </div>
-            </div>
-        `;
-
-        Object.entries(worlds).forEach(([worldId, world]) => {
-            ensureWorldShape(world);
-            const card = document.createElement('div');
-            card.className = 'book-card';
-            card.innerHTML = `
-                <div class="book-card-inner">
-                    <div class="book-icon">📘</div>
-                    <div class="book-title">${escapeHtml(world.name)}</div>
-                    <div class="book-meta">
-                        <div class="book-stats">
-                            <span class="book-stat">主角 ${world.protagonists.length}</span>
-                            <span class="book-stat">章节 ${world.chapters.length}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-            card.addEventListener('click', () => enterWorkspace(worldId));
-            grid.appendChild(card);
-        });
-    }    function renderProtagonists(world) {
-        const container = document.getElementById('protagonistsContainer');
-        if (!container) return;
-        const roleOptions = ['\u7537\u4e3b\u653b', '\u7537\u4e3b\u53d7', '\u5973\u4e3b\u653b', '\u5973\u4e3b\u53d7', '\u7537\u4e3b', '\u5973\u4e3b'];
-        if (!world.protagonists.length) {
-            container.innerHTML = '<div class="reader-empty">\u6682\u65e0\u4e3b\u89d2\uff0c\u70b9\u51fb\u4e0b\u65b9\u6309\u94ae\u6dfb\u52a0\u3002</div>';
-            return;
-        }
-
-        container.innerHTML = world.protagonists.map((item, index) => {
-            const options = roleOptions.map(option => '<option value="' + option + '" ' + (item.roleType === option ? 'selected' : '') + '>' + option + '</option>').join('');
-
-            return [
-                '<div class="protagonist-card">',
-                '    <div class="protagonist-card-header">',
-                '        <strong>\u4e3b\u89d2 ' + (index + 1) + '</strong>',
-                '        <button class="btn-header-small btn-danger" type="button" onclick="removeProtagonist(\'' + item.id + '\')">\u5220\u9664</button>',
-                '    </div>',
-                '    <div class="protagonist-card-meta protagonist-card-meta-single">',
-                '        <select onchange="updateProtagonistField(\'' + item.id + '\', \'roleType\', this.value)">' + options + '</select>',
-                '    </div>',
-                '    <input type="text" value="' + escapeHtml(item.name || '') + '" placeholder="\u4e3b\u89d2\u59d3\u540d" oninput="updateProtagonistField(\'' + item.id + '\', \'name\', this.value)">',
-                '    <textarea rows="4" placeholder="\u7b80\u8981\u8bb0\u5f55\u8fd9\u4e2a\u4e3b\u89d2\u7684\u5b9a\u4f4d\u3001\u6027\u683c\u3001\u76ee\u6807\u6216\u5173\u7cfb\u3002" oninput="updateProtagonistField(\'' + item.id + '\', \'summary\', this.value)">' + escapeHtml(item.summary || '') + '</textarea>',
-                '</div>'
-            ].join('');
-        }).join('');
-    }
-
-    function renderTagGroup(category, items, selected) {
-        const containerId = { persona: 'personaTags', trope: 'tropeTags', storyKeyword: 'storyKeywordTags' }[category];
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        if (!items.length) {
-            container.innerHTML = '<span class="current-inspo-empty">暂无词条</span>';
-            return;
-        }
-        container.innerHTML = items.map((item, index) => `
-            <button type="button" class="inspo-tag${selected.includes(item) ? ' selected' : ''}" onclick="toggleInspoWord('${category}', ${index})">
-                ${escapeHtml(item)}
-                <span class="namer-tag-del" onclick="removeInspoWord('${category}', ${index}, event)">×</span>
-            </button>
-        `).join('');
-    }
-
-    function renderSelectedInspos(world) {
-        ensureWorldShape(world);
-        const containers = Array.from(document.querySelectorAll('[data-role="selected-inspos"]'));
-        if (!containers.length) return;
-        const tags = [
-            ...world.selected.persona.map(value => ({ type: 'persona', value })),
-            ...world.selected.trope.map(value => ({ type: 'trope', value }))
-        ];
-        const markup = tags.length
-            ? tags.map(tag => `
-                <span class="current-inspo-tag">
-                    ${escapeHtml(tag.value)}
-                    <button type="button" onclick="deselectInspoWord('${tag.type}', decodeURIComponent('${encodeURIComponent(tag.value)}'))">×</button>
-                </span>
-            `).join('')
-            : '<span class="current-inspo-empty">暂未选择灵感词条</span>';
-        containers.forEach(container => {
-            container.innerHTML = markup;
-        });
-    }
-
-    function renderReader(world) {
-        const reader = document.getElementById('readerContent');
-        const chapterBanner = document.getElementById('storyChapterBanner');
-        const chapterSelect = document.getElementById('storyChapterSelect');
-        const continueButton = document.getElementById('btnContinueSelectedBranch');
-        const regenerateButton = document.getElementById('btnRegenerateChapter');
-        if (!reader) return;
-        const entries = Array.isArray(world.ai.chapterEntries) ? world.ai.chapterEntries : [];
-        const latestIndex = entries.length ? entries.length - 1 : Math.max((world.chapters?.length || 1) - 1, 0);
-        const currentIndex = Math.min(Math.max(world.ai.currentChapterIndex || 0, 0), latestIndex);
-        const currentEntry = entries[currentIndex] || null;
-        if (chapterBanner) {
-            chapterBanner.textContent = currentEntry?.title || (world.chapters?.[currentIndex] || '\u7b2c\u4e00\u7ae0');
-        }
-        if (chapterSelect) {
-            const titles = world.chapters?.length ? world.chapters : ['\u7b2c\u4e00\u7ae0'];
-            chapterSelect.innerHTML = titles.map((title, index) => `<option value="${index}" ${index === currentIndex ? 'selected' : ''}>${escapeHtml(title)}</option>`).join('');
-        }
-        if (regenerateButton) {
-            regenerateButton.disabled = currentIndex !== latestIndex;
-        }
-        if (continueButton) {
-            const canContinue = currentIndex === latestIndex && currentEntry?.branches?.length && world.ai.selectedBranch;
-            continueButton.disabled = !canContinue;
-        }
-        if (!currentEntry?.content) {
-            reader.innerHTML = '<div class="reader-empty">\u751f\u6210\u540e\u7684\u6545\u4e8b\u4f1a\u663e\u793a\u5728\u8fd9\u91cc</div>';
-            return;
-        }
-        reader.innerHTML = `<div class="reader-story-text">${escapeHtml(currentEntry.content)}</div>`;
-    }
-
-    function renderStoryBranches(world) {
-        const panel = document.getElementById('storyBranchPanel');
-        const list = document.getElementById('storyBranchList');
-        const note = document.getElementById('storyBranchHint');
-        if (!panel || !list) return;
-        const entries = Array.isArray(world.ai.chapterEntries) ? world.ai.chapterEntries : [];
-        const latestIndex = entries.length ? entries.length - 1 : 0;
-        const currentIndex = Math.min(Math.max(world.ai.currentChapterIndex || 0, 0), latestIndex);
-        const currentEntry = entries[currentIndex];
-        const branches = Array.isArray(currentEntry?.branches) ? currentEntry.branches : [];
-        const selectable = currentIndex === latestIndex;
-        if (!branches.length) {
-            panel.classList.remove('has-branches');
-            list.innerHTML = '';
-            if (note) note.textContent = currentIndex === latestIndex ? '\u672c\u7ae0\u6682\u65e0\u53ef\u7ee7\u7eed\u7684\u5267\u60c5\u5206\u652f' : '\u65e7\u7ae0\u4ec5\u4f9b\u9605\u8bfb\uff0c\u4e0d\u53ef\u7ee7\u7eed\u751f\u6210';
-            return;
-        }
-        panel.classList.add('has-branches');
-        if (note) note.textContent = selectable ? '\u5148\u9009\u62e9\u4e00\u4e2a\u5206\u652f\uff0c\u518d\u70b9\u51fb\u4e0b\u65b9\u6309\u94ae\u7ee7\u7eed\u751f\u6210' : '\u65e7\u7ae0\u53ea\u8bfb\u67e5\u770b\uff0c\u53ea\u6709\u5f53\u524d\u6700\u65b0\u7ae0\u53ef\u9009\u62e9\u5206\u652f\u7ee7\u7eed';
-        list.innerHTML = branches.map((branch, index) => `
-            <button type="button" class="story-branch-btn${world.ai.selectedBranch === branch ? ' active' : ''}" onclick="selectStoryBranch(${index})" ${selectable ? '' : 'disabled'}>
-                ${escapeHtml(branch)}
-            </button>
-        `).join('');
-    }
-
-    function renderParsedCharacterCards(world) {
-        const container = document.getElementById('aiParsedCardsChar');
-        if (!container) return;
-        const raw = world.ai.rawChar?.trim();
-        if (!raw) {
-            container.innerHTML = '';
-            return;
-        }
-        try {
-            const parsed = JSON.parse(raw);
-            container.innerHTML = Object.entries(parsed).map(([name, data]) => `
-                <div class="parsed-char-card">
-                    <div class="parsed-char-header">
-                        <strong>${escapeHtml(name)}</strong>
-                        <span>${escapeHtml((data.basic?.identity || []).join(' / ') || (data.basic?.archetype || []).join(' / ') || '角色卡')}</span>
-                    </div>
-                    <div class="parsed-char-body">
-                        <div class="parsed-char-summary">
-                            <div class="parsed-char-field"><strong>人物关键词</strong><span>${escapeHtml(world.selected.persona.join(' / ') || '未附带')}</span></div>
-                            <div class="parsed-char-field"><strong>剧情关键词</strong><span>${escapeHtml(world.selected.trope.join(' / ') || '未附带')}</span></div>
-                        </div>
-                        <div class="parsed-char-full">${escapeHtml(JSON.stringify(data, null, 2))}</div>
-                    </div>
-                </div>
-            `).join('');
-        } catch {
-            container.innerHTML = `<div class="parsed-char-card"><div class="parsed-char-header"><strong>原始输出</strong><span>未解析</span></div><div class="parsed-char-body"><div class="parsed-char-full">${escapeHtml(raw)}</div></div></div>`;
-        }
-    }
-
-    function syncTropeTextarea(world) {
-        const textarea = document.getElementById('aiTrope');
-        if (textarea) textarea.value = world.selected.trope.join('、');
-    }
-
-    function getSelectedCharModules() {
-        return Array.from(document.querySelectorAll('input[name="aiModule"]:checked')).map(input => input.value);
-    }
-
-    function updateModulePreview() {
-        const preview = document.getElementById('moduleJsonPreview');
-        if (!preview) return;
-        const modules = getSelectedCharModules();
-        preview.textContent = `{\n  "该主角的名字": {\n${modules.map(module => `    ${MODULE_JSON_SCHEMA[module]}`).join(',\n')}\n  }\n}`;
-    }
-
-    function renderWorldData() {
-        const world = getCurrentWorld();
-        if (!world) return;
-        ensureWorldShape(world);
-        document.getElementById('workspaceTitle').textContent = world.name;
-        document.getElementById('worldWorldbook').value = world.worldbook || '';
-        document.getElementById('aiPersona').value = world.ai.persona || document.getElementById('aiPersona').value;
-        document.getElementById('aiWorldPersona').value = world.ai.worldPersona || document.getElementById('aiWorldPersona').value;
-        document.getElementById('aiStoryPersona').value = world.ai.storyPersona || document.getElementById('aiStoryPersona').value;
-        document.getElementById('aiStoryRequest').value = world.ai.storyRequest || document.getElementById('aiStoryRequest').value;
-        const openingPersonaCards = document.getElementById('openingPersonaCards');
-        const openingWorldbook = document.getElementById('openingWorldbook');
-        if (openingPersonaCards) openingPersonaCards.value = world.ai.openingPersonaCards || '';
-        if (openingWorldbook) openingWorldbook.value = world.ai.openingWorldbook || '';
-        document.getElementById('storyBranchTemplate').value = world.ai.branchTemplate || DEFAULT_BRANCH_TEMPLATE;
-        WORLD_MODULE_CONFIGS.forEach(config => {
-            const textarea = document.getElementById(config.textareaId);
-            const checkbox = document.querySelector(`input[name="worldModule"][value="${config.key}"]`);
-            if (textarea) textarea.value = world.ai.worldModuleDrafts?.[config.key] || '';
-            if (checkbox) checkbox.checked = world.ai.worldModuleSelection?.[config.key] !== false;
-            updateWorldModuleHint(config.textareaId, config.hintId);
-        });
-        document.getElementById('aiRawReplyContentChar').textContent = world.ai.rawChar || '';
-        document.getElementById('aiRawReplyContentWorld').textContent = world.ai.rawWorld || '';
-        document.getElementById('aiRawReplyContentStory').textContent = world.ai.rawStory || '';
-        document.getElementById('aiRawReplySectionChar')?.classList.toggle('view-hidden', !world.ai.rawChar);
-        document.getElementById('aiRawReplySectionWorld')?.classList.toggle('view-hidden', !world.ai.rawWorld);
-        document.getElementById('aiRawReplySectionStory')?.classList.toggle('view-hidden', !world.ai.rawStory);
-        renderProtagonists(world);
-        renderTagGroup('persona', world.pools.persona, world.selected.persona);
-        renderTagGroup('trope', world.pools.trope, world.selected.trope);
-        renderTagGroup('storyKeyword', world.pools.storyKeyword, world.selected.storyKeyword);
-        renderSelectedInspos(world);
-        syncTropeTextarea(world);
-        renderParsedCharacterCards(world);
-        updateModulePreview();
-        renderReader(world);
-        renderStoryBranches(world);
-    }
+    function renderBookshelf() { return renderActions.renderBookshelf(); }
+    function renderWorldData() { return renderActions.renderWorldData(); }
+    function renderReader(world) { return renderActions.renderReader(world); }
+    function getSelectedCharModules() { return renderActions.getSelectedCharModules(); }
+    function updateModulePreview() { return renderActions.updateModulePreview(); }
 
     function enterWorkspace(worldId) {
         setCurrentWorldId(worldId);
@@ -748,10 +102,15 @@
         if (!input) return;
         const name = input.trim();
         if (!name) return;
+        const clearedGlobalInspo = updateGlobalInspo(globalInspo => {
+            Object.keys(globalInspo.selected).forEach(category => {
+                globalInspo.selected[category] = [];
+            });
+        });
         const worlds = getWorlds();
         const worldId = generateId();
         worlds[worldId] = createDefaultWorld(name);
-        applyGlobalInspoToWorld(worlds[worldId]);
+        applyGlobalInspoToWorld(worlds[worldId], clearedGlobalInspo);
         saveWorlds(worlds);
         setCurrentWorldId(worldId);
         renderBookshelf();
@@ -1015,15 +374,6 @@
         navigator.clipboard.writeText(content).then(() => showToast('已复制')).catch(() => showToast('复制失败'));
     }
 
-    function copyReaderStory() {
-        const world = getCurrentWorld();
-        if (!world?.ai.renderedStory) {
-            showToast('没有可复制的故事');
-            return;
-        }
-        navigator.clipboard.writeText(world.ai.renderedStory).then(() => showToast('已复制正文')).catch(() => showToast('复制失败'));
-    }
-
     function setButtonBusy(buttonId, statusId, busy, text) {
         const button = document.getElementById(buttonId);
         const status = document.getElementById(statusId);
@@ -1040,648 +390,10 @@
         if (status) status.textContent = text;
     }
 
-    function renderProviderSelect(providers, currentId) {
-        const select = document.getElementById('providerSelect');
-        if (!select) return;
-        select.innerHTML = '';
-        Object.entries(providers).forEach(([id, config]) => {
-            const option = document.createElement('option');
-            option.value = id;
-            option.textContent = config.name || '默认配置';
-            option.selected = id === currentId;
-            select.appendChild(option);
-        });
-    }
-
-    function renderModelList(models, selectedModel) {
-        const list = document.getElementById('modelList');
-        if (!list) return;
-        list.innerHTML = '';
-        models.forEach(modelId => {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = `model-card${modelId === selectedModel ? ' selected' : ''}`;
-            button.innerHTML = `<span class="model-dot"></span>${escapeHtml(modelId)}`;
-            button.addEventListener('click', () => {
-                window.AIService?.setSelectedModel(modelId);
-                saveCurrentProviderConfig();
-                renderModelList(models, modelId);
-                setApiStatus('valid', `已选择模型：${modelId}`);
-            });
-            list.appendChild(button);
-        });
-    }
-
-    function loadProviderConfig(providerId) {
-        const providers = window.AIService?.getProviders?.() || {};
-        const config = providers[providerId];
-        if (!config) return;
-        document.getElementById('aiBaseUrl').value = config.baseUrl || '';
-        document.getElementById('aiApiKey').value = config.apiKey || '';
-        if (config.selectedModel) {
-            window.AIService?.setSelectedModel(config.selectedModel);
-            setApiStatus('valid', `已选择模型：${config.selectedModel}`);
-        } else {
-            setApiStatus('', '未连接');
-        }
-    }
-
-    function ensureProviderSystem() {
-        if (!window.AIService?.initProviderSystem) return;
-        const { providers, currentId } = window.AIService.initProviderSystem();
-        renderProviderSelect(providers, currentId);
-        loadProviderConfig(currentId);
-    }
-
-    function saveCurrentProviderConfig() {
-        if (!window.AIService?.saveCurrentProviderConfig) return;
-        window.AIService.saveCurrentProviderConfig({
-            baseUrl: document.getElementById('aiBaseUrl')?.value.trim() || '',
-            apiKey: document.getElementById('aiApiKey')?.value.trim() || '',
-            selectedModel: window.AIService.getSelectedModel?.() || ''
-        });
-    }
-
-    function switchProvider(providerId) {
-        saveCurrentProviderConfig();
-        window.AIService?.setCurrentProviderId?.(providerId);
-        loadProviderConfig(providerId);
-        document.getElementById('modelList').innerHTML = '';
-    }
-
-    function newProvider() {
-        const name = window.prompt('新配置名称', '默认配置');
-        if (!name || !window.AIService?.getProviders) return;
-        const providers = window.AIService.getProviders();
-        const id = generateId();
-        providers[id] = { name: name.trim() || '默认配置', baseUrl: '', apiKey: '', selectedModel: '' };
-        window.AIService.saveProviders(providers);
-        window.AIService.setCurrentProviderId(id);
-        renderProviderSelect(providers, id);
-        loadProviderConfig(id);
-    }
-
-    function renameProvider() {
-        if (!window.AIService?.getCurrentProviderId) return;
-        const id = window.AIService.getCurrentProviderId();
-        const providers = window.AIService.getProviders();
-        const current = providers[id];
-        if (!current) return;
-        const name = window.prompt('新的配置名称', current.name || '默认配置');
-        if (!name) return;
-        current.name = name.trim() || current.name;
-        window.AIService.saveProviders(providers);
-        renderProviderSelect(providers, id);
-    }
-
-    function deleteProvider() {
-        if (!window.AIService?.getProviders) return;
-        const providers = window.AIService.getProviders();
-        const ids = Object.keys(providers);
-        if (ids.length <= 1) {
-            showToast('至少保留一个配置');
-            return;
-        }
-        const id = window.AIService.getCurrentProviderId();
-        delete providers[id];
-        const nextId = Object.keys(providers)[0];
-        window.AIService.saveProviders(providers);
-        window.AIService.setCurrentProviderId(nextId);
-        renderProviderSelect(providers, nextId);
-        loadProviderConfig(nextId);
-    }
-
-    async function fetchModels() {
-        saveCurrentProviderConfig();
-        const baseUrl = document.getElementById('aiBaseUrl')?.value.trim() || '';
-        const apiKey = document.getElementById('aiApiKey')?.value.trim() || '';
-        if (!window.AIService?.fetchModels) {
-            showToast('AI 服务未就绪');
-            return;
-        }
-        if (!baseUrl) {
-            setApiStatus('invalid', '请先填写 API 地址');
-            return;
-        }
-        setApiStatus('loading', '正在拉取模型...');
-        try {
-            const models = await window.AIService.fetchModels(baseUrl, apiKey);
-            renderModelList(models, window.AIService.getSelectedModel?.() || '');
-            setApiStatus('valid', `已拉取 ${models.length} 个模型`);
-            saveCurrentProviderConfig();
-        } catch (error) {
-            setApiStatus('invalid', error.message || '拉取失败');
-        }
-    }
-
-    function toggleApiKey() {
-        const input = document.getElementById('aiApiKey');
-        if (input) input.type = input.type === 'password' ? 'text' : 'password';
-    }
-
-    function getProtagonistPrompt(world) {
-        return world.protagonists.map(item => [
-            `\u3010\u4e3b\u89d2\u3011\uff1a${item.name || '\u672a\u547d\u540d'}`,
-            `\u3010\u5c5e\u6027/\u5b9a\u4f4d\u3011\uff1a${item.roleType || '\u672a\u8bbe\u5b9a'}`,
-            `\u3010\u8bbe\u5b9a\u7b80\u8ff0\u3011\uff1a${item.summary || '\u6682\u65e0'}`
-        ].join("\n")).join("\n\n");
-    }
-
-    function collectCharacterText(value, bucket = []) {
-        if (value == null) return bucket;
-        if (typeof value === 'string') {
-            const text = value.trim();
-            if (text) bucket.push(text);
-            return bucket;
-        }
-        if (Array.isArray(value)) {
-            value.forEach(item => collectCharacterText(item, bucket));
-            return bucket;
-        }
-        if (typeof value === 'object') {
-            Object.values(value).forEach(item => collectCharacterText(item, bucket));
-        }
-        return bucket;
-    }
-
-    function inferProtagonistRole(data, fallback = '\u7537\u4e3b\u653b') {
-        const gender = String(data?.basic?.gender || '').trim();
-        const identityText = collectCharacterText(data?.basic?.identity || []).join(' / ');
-        const roleHints = `${gender} ${identityText}`;
-        if (/女/.test(roleHints) && /受/.test(roleHints)) return '\u5973\u4e3b\u53d7';
-        if (/女/.test(roleHints) && /攻/.test(roleHints)) return '\u5973\u4e3b\u653b';
-        if (/男/.test(roleHints) && /受/.test(roleHints)) return '\u7537\u4e3b\u53d7';
-        if (/男/.test(roleHints) && /攻/.test(roleHints)) return '\u7537\u4e3b\u653b';
-        if (/女/.test(roleHints)) return '\u5973\u4e3b';
-        if (/男/.test(roleHints)) return '\u7537\u4e3b';
-        return fallback;
-    }
-
-    function buildProtagonistSummary(data) {
-        const lines = [];
-        const pushLine = (label, value) => {
-            const parts = collectCharacterText(value);
-            if (!parts.length) return;
-            lines.push(`${label}\uff1a${parts.join(' / ')}`);
-        };
-        pushLine('\u5b9a\u4f4d', data?.basic?.identity || data?.basic?.archetype);
-        pushLine('\u793e\u4ea4', data?.basic?.social);
-        pushLine('\u6027\u683c', data?.personality?.core_traits || data?.personality?.romantic_traits);
-        pushLine('\u52a8\u673a', data?.personality?.goals);
-        pushLine('\u4e60\u60ef', data?.behavior?.lifestyle || data?.behavior?.work_behaviors);
-        pushLine('\u80cc\u666f', data?.background?.current || data?.background?.youth || data?.background?.teenage || data?.background?.childhood);
-        pushLine('\u8865\u5145', data?.extra?.additional_notes || data?.extra?.defining_moments || data?.extra?.relationships);
-        const summary = lines.join('\n');
-        if (summary) return summary;
-        const fallback = collectCharacterText(data).slice(0, 6).join(' / ');
-        return fallback || '\u6682\u65e0';
-    }
-
-    function mapRawCharToProtagonists(rawChar, existing = []) {
-        if (!rawChar?.trim()) return existing;
-        try {
-            const parsed = JSON.parse(rawChar);
-            const entries = Object.entries(parsed);
-            if (!entries.length) return existing;
-            return entries.map(([name, data], index) => {
-                const previous = existing[index] || existing.find(item => item.name === name);
-                const displayName = data?.basic?.chinese_name || data?.basic?.char_name || name || previous?.name || `\u4e3b\u89d2 ${index + 1}`;
-                return {
-                    id: previous?.id || generateId(),
-                    name: displayName,
-                    roleType: previous?.roleType || inferProtagonistRole(data, previous?.roleType || '\u7537\u4e3b\u653b'),
-                    summary: buildProtagonistSummary(data)
-                };
-            });
-        } catch {
-            return existing;
-        }
-    }
-
-    function normalizeJsonResponse(content) {
-        return content.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
-    }
-
-    function normalizeYamlResponse(content) {
-        return content.trim().replace(/^```yaml\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
-    }
-
-    function normalizeStoryResponse(content) {
-        return content.trim().replace(/^```html\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
-    }
-
-    function parseStoryResponse(content) {
-        const normalized = normalizeStoryResponse(content);
-        const storyMatch = normalized.match(/<story>([\s\S]*?)<\/story>/i);
-        const detailsMatch = normalized.match(/<details>[\s\S]*?<\/details>/i);
-        const branchesMatch = normalized.match(/<branches>([\s\S]*?)<\/branches>/i);
-        const story = storyMatch ? storyMatch[1].trim() : normalized.replace(/<details>[\s\S]*<\/details>/i, '').trim();
-        const branchesHtml = detailsMatch ? detailsMatch[0].trim() : '';
-        const branches = branchesMatch
-            ? branchesMatch[1].split(/\r?\n/).map(line => line.replace(/^[\s\-•\d.]+/, '').trim()).filter(Boolean)
-            : [];
-        return { raw: normalized, story, branchesHtml, branches };
-    }
-
-    async function runGeneration({ system, user, outputId, buttonId, statusId, after }) {
-        saveAiDrafts();
-        if (!window.AIService?.executeGeneration) {
-            setButtonBusy(buttonId, statusId, false, 'AI 服务未就绪');
-            return null;
-        }
-        currentStreamingTarget = outputId;
-        const output = document.getElementById(outputId);
-        if (output) output.textContent = '';
-        setButtonBusy(buttonId, statusId, true, '生成中...');
-        try {
-            const content = await window.AIService.executeGeneration(system, user, {
-                stream: document.getElementById('enableStream')?.checked !== false
-            });
-            if (output) output.textContent = content;
-            if (after) after(content);
-            setButtonBusy(buttonId, statusId, false, '生成完成');
-            scrollResultIntoView(outputId);
-            return content;
-        } catch (error) {
-            setButtonBusy(buttonId, statusId, false, error.message || '生成失败');
-            return null;
-        } finally {
-            currentStreamingTarget = null;
-        }
-    }
-
-    async function generateWithAI() {
-        const world = getCurrentWorld();
-        if (!world?.protagonists.length) {
-            showToast('请先添加至少一个主角');
-            return;
-        }
-        const modules = getSelectedCharModules();
-        if (!modules.length) {
-            showToast('请至少勾选一个详细模块');
-            return;
-        }
-        const guides = modules.map(module => `【${MODULE_GUIDE_LABELS[module]}】\n${document.getElementById(`guide_${module}`)?.value || ''}`).join('\n\n');
-        const schemaStr = `{\n  "该主角的名字": {\n${modules.map(module => `    ${MODULE_JSON_SCHEMA[module]}`).join(',\n')}\n  }\n}`;
-        const tropeText = document.getElementById('sendTropeToAi')?.checked ? world.selected.trope.join('、') : '';
-        const system = `<persona>\n${document.getElementById('aiPersona')?.value || ''}\n</persona>`;
-        const preferredWorldbook = world.worldbook || world.ai.rawWorld || '\u6682\u65e0\u4e16\u754c\u4e66';
-        const user = [
-            `<current_worldbook>\n${preferredWorldbook}\n</current_worldbook>`,
-            `<generated_worldbook>\n${world.ai.rawWorld || world.worldbook || '暂无世界书'}\n</generated_worldbook>`,
-            `<original_protagonists>\n${getProtagonistPrompt(world)}\n</original_protagonists>`,
-            `<persona_keywords>\n${world.selected.persona.join('、') || '未选择'}\n</persona_keywords>`,
-            tropeText ? `<global_trope>\n${tropeText}\n</global_trope>` : '',
-            `<module_guides>\n${guides}\n</module_guides>`,
-            `<instructions>\n请参考 AI 生成的世界书、现有主角设定和灵感池，为每一位主角生成详细的人设卡。\n你需要将每一个主角的数据放到同一个 JSON 对象中，使用各自的名字作为顶级键名。\n请严格按照以下 JSON 结构返回，不要输出 Markdown 或额外说明：\n${schemaStr}\n</instructions>`
-        ].filter(Boolean).join('\n\n');
-        await runGeneration({
-            system,
-            user,
-            outputId: 'aiRawReplyContentChar',
-            buttonId: 'btnGenerateChar',
-            statusId: 'aiStatusTextChar',
-            after: raw => {
-                const normalized = normalizeJsonResponse(raw);
-                updateCurrentWorld(target => {
-                    target.ai.rawChar = normalized;
-                    target.ai.openingPersonaCards = normalized;
-                });
-                renderWorldData();
-            }
-        });
-    }
-
-    async function generateWorldbookWithAI() {
-        const world = getCurrentWorld();
-        if (!world?.protagonists.length) {
-            showToast('请先添加至少一个主角');
-            return;
-        }
-        const modules = Array.from(document.querySelectorAll('input[name="worldModule"]:checked')).map(input => {
-            const config = WORLD_MODULE_CONFIGS.find(item => item.key === input.value);
-            if (!config) return null;
-            const value = document.getElementById(config.textareaId)?.value.trim() || '';
-            if (!value) return null;
-            return [config.label, value];
-        }).filter(Boolean);
-        if (!modules.length) {
-            showToast('请至少填写一个要扩写的模块要求');
-            return;
-        }
-        const tropeText = document.getElementById('sendTropeToWorld')?.checked ? world.selected.trope.join('、') : '';
-        const system = `<persona>\n${document.getElementById('aiWorldPersona')?.value || ''}\n</persona>`;
-        const user = [
-            `<current_worldbook>\n${world.worldbook || '暂无'}\n</current_worldbook>`,
-            `<protagonists>\n${getProtagonistPrompt(world)}\n</protagonists>`,
-            `<persona_keywords>\n${world.selected.persona.join('、') || '未选择'}\n</persona_keywords>`,
-            tropeText ? `<global_trope>\n${tropeText}\n</global_trope>` : '',
-            `<world_modules>\n${modules.map(([label, value]) => `【${label}】\n${value}`).join('\n\n')}\n</world_modules>`,
-            `<instructions>\n请参考主角设定、人物关键词池和剧情关键词池，生成适合小说创作的世界书。\n请严格只输出 YAML，不要输出 Markdown 代码块，不要附加解释文字。\n输出结构示例：\nworldbook:\n  era_background: |\n    ...\n  special_settings: |\n    ...\n  npcs: |\n    ...\n  persona_correction: |\n    ...\n  extra: |\n    ...\n</instructions>`
-        ].filter(Boolean).join('\n\n');
-        await runGeneration({
-            system,
-            user,
-            outputId: 'aiRawReplyContentWorld',
-            buttonId: 'btnGenerateWorld',
-            statusId: 'aiStatusTextWorld',
-            after: raw => {
-                const normalized = normalizeYamlResponse(raw);
-                updateCurrentWorld(target => {
-                    target.ai.rawWorld = normalized;
-                    target.ai.openingWorldbook = normalized;
-                });
-                renderWorldData();
-            }
-        });
-    }
-
-    function buildStoryPrompt(world, isContinuation) {
-        const branchTemplate = world.ai.branchTemplate || DEFAULT_BRANCH_TEMPLATE;
-        const preferredWorldbook = world.ai.openingWorldbook || world.ai.rawWorld || world.worldbook || '\u6682\u65e0\u4e16\u754c\u4e66';
-        const protagonistsFormal = world.ai.openingPersonaCards || world.ai.rawChar || getProtagonistPrompt(world) || '\u6682\u65e0\u4e3b\u89d2\u8bbe\u5b9a';
-        const selectedBranch = world.ai.selectedBranch || '未选择分支，由你自然续接剧情';
-        const storyKeywords = world.selected.storyKeyword.join('、') || '未选择';
-        const tropeText = document.getElementById('sendTropeToStory')?.checked ? world.selected.trope.join('、') : '';
-        const charJson = world.ai.rawChar || '暂无 AI 人设卡';
-        const storyContext = world.ai.renderedStory || '暂无已生成正文';
-        return [
-            `<current_worldbook>\n${preferredWorldbook}\n</current_worldbook>`,
-            `<protagonists>\n${protagonistsFormal}\n</protagonists>`,
-            `<generated_worldbook>\n${world.ai.rawWorld || world.worldbook || '暂无世界书'}\n</generated_worldbook>`,
-            `<generated_character_cards>\n${charJson}\n</generated_character_cards>`,
-            `<original_protagonists>\n${getProtagonistPrompt(world)}\n</original_protagonists>`,
-            `<story_keywords>\n${storyKeywords}\n</story_keywords>`,
-            tropeText ? `<global_trope>\n${tropeText}\n</global_trope>` : '',
-            isContinuation ? `<existing_story>\n${storyContext}\n</existing_story>` : '',
-            isContinuation ? `<selected_branch>\n${selectedBranch}\n</selected_branch>` : '',
-            `<branch_template>\n${branchTemplate}\n</branch_template>`,
-            `<request>\n${document.getElementById('aiStoryRequest')?.value || ''}\n</request>`,
-            `<instructions>\n${isContinuation ? '请结合已有故事、所选分支、世界书、人设卡和关键词继续生成后续正文。' : '请结合世界书、人设卡、主角设定和故事关键词生成故事开头。'}\n输出必须严格使用以下结构：\n<story>\n故事正文\n</story>\n<details>\n<summary>保留或重写标题均可</summary>\n<branches>\n每行一个分支选项，共 6 行\n</branches>\n</details>\n分支内容必须遵守 branch_template 中的全部要求。\n</instructions>`
-        ].filter(Boolean).join('\n\n');
-    }
-
-    async function generateStoryWithAI() {
-        const world = getCurrentWorld();
-        if (!world?.protagonists.length) {
-            showToast('请先添加至少一个主角');
-            return;
-        }
-        if (!world.ai.openingWorldbook) {
-            showToast('请先生成或填写世界书');
-            return;
-        }
-        if (!world.ai.openingPersonaCards) {
-            showToast('请先生成人设卡');
-            return;
-        }
-        const request = document.getElementById('aiStoryRequest')?.value.trim() || '';
-        if (!request) {
-            showToast('请填写故事开头要求');
-            return;
-        }
-        const isContinuation = Boolean(world.ai.renderedStory && world.ai.selectedBranch);
-        const system = `<persona>\n${document.getElementById('aiStoryPersona')?.value || ''}\n</persona>`;
-        const user = buildStoryPrompt(world, isContinuation);
-        await runGeneration({
-            system,
-            user,
-            outputId: 'aiRawReplyContentStory',
-            buttonId: 'btnGenerateStory',
-            statusId: 'aiStoryStatusText',
-            after: raw => {
-                const parsed = parseStoryResponse(raw);
-                updateCurrentWorld(target => {
-                    ensureWorldShape(target);
-                    const chapterTitle = target.chapters?.length ? target.chapters[target.chapters.length - 1] : '\u7b2c\u4e00\u7ae0';
-                    const chapterEntry = {
-                        title: chapterTitle,
-                        content: parsed.story,
-                        branches: parsed.branches,
-                        sourceBranch: isContinuation ? target.ai.selectedBranch : ''
-                    };
-                    target.ai.rawStory = parsed.raw;
-                    target.ai.renderedStory = isContinuation ? `${target.ai.renderedStory}\n\n${parsed.story}`.trim() : parsed.story;
-                    target.ai.storyHtml = parsed.story;
-                    target.ai.storyBranchesHtml = parsed.branchesHtml;
-                    target.ai.storyBranches = parsed.branches;
-                    if (isContinuation) target.ai.chapterEntries.push(chapterEntry);
-                    else if (target.ai.chapterEntries.length) target.ai.chapterEntries[target.ai.chapterEntries.length - 1] = chapterEntry;
-                    else target.ai.chapterEntries = [chapterEntry];
-                    target.ai.currentChapterIndex = Math.max(target.ai.chapterEntries.length - 1, 0);
-                    if (isContinuation) {
-                        target.ai.storyHistory.push({ branch: target.ai.selectedBranch, appended: parsed.story });
-                    }
-                    target.ai.selectedBranch = '';
-                });
-                switchWorkspacePanel('story');
-                renderWorldData();
-            }
-        });
-    }
-
-    function selectStoryBranch(index) {
-        const world = getCurrentWorld();
-        const entries = Array.isArray(world?.ai?.chapterEntries) ? world.ai.chapterEntries : [];
-        const latestIndex = Math.max(entries.length - 1, 0);
-        if ((world?.ai?.currentChapterIndex || 0) !== latestIndex) return;
-        const branches = entries[latestIndex]?.branches || world?.ai?.storyBranches || [];
-        if (!branches[index]) return;
-        updateCurrentWorld(target => {
-            target.ai.selectedBranch = branches[index];
-        });
-        renderWorldData();
-        showToast('\u5df2\u9009\u4e2d\u5267\u60c5\u5206\u652f');
-    }
-
-    function changeStoryChapter(index) {
-        const world = getCurrentWorld();
-        const entries = Array.isArray(world?.ai?.chapterEntries) ? world.ai.chapterEntries : [];
-        const nextIndex = Math.min(Math.max(Number(index) || 0, 0), Math.max(entries.length - 1, 0));
-        updateCurrentWorld(target => {
-            target.ai.currentChapterIndex = nextIndex;
-            if (nextIndex !== Math.max((target.ai.chapterEntries?.length || 1) - 1, 0)) {
-                target.ai.selectedBranch = '';
-            }
-        });
-        renderWorldData();
-    }
-
-    function continueStoryFromSelectedBranch() {
-        const world = getCurrentWorld();
-        const entries = Array.isArray(world?.ai?.chapterEntries) ? world.ai.chapterEntries : [];
-        const latestIndex = Math.max(entries.length - 1, 0);
-        if ((world?.ai?.currentChapterIndex || 0) !== latestIndex) {
-            showToast('\u53ea\u6709\u6700\u65b0\u7ae0\u53ef\u7ee7\u7eed\u751f\u6210');
-            return;
-        }
-        if (!world.ai.selectedBranch) {
-            showToast('\u8bf7\u5148\u9009\u62e9\u4e00\u4e2a\u5267\u60c5\u5206\u652f');
-            return;
-        }
-        const nextChapterNumber = (world.chapters?.length || 0) + 1;
-        const nextChapterName = '\u7b2c' + nextChapterNumber + '\u7ae0';
-        updateCurrentWorld(target => {
-            target.chapters ||= [];
-            target.chapters.push(nextChapterName);
-            target.ai.currentChapterIndex = target.chapters.length - 1;
-        });
-        showToast('\u5c06\u6309\u9009\u4e2d\u5206\u652f\u7ee7\u7eed\u751f\u6210' + nextChapterName);
-        generateStoryWithAI();
-    }
-
-    function regenerateCurrentChapter() {
-        const world = getCurrentWorld();
-        const entries = Array.isArray(world?.ai?.chapterEntries) ? world.ai.chapterEntries : [];
-        const currentIndex = world?.ai?.currentChapterIndex || 0;
-        const latestIndex = Math.max(entries.length - 1, 0);
-        const latestEntry = entries[latestIndex];
-        if (currentIndex !== latestIndex) {
-            showToast('\u6682\u53ea\u652f\u6301\u91cd\u65b0\u751f\u6210\u6700\u65b0\u7ae0');
-            return;
-        }
-        if (!latestEntry?.content) {
-            showToast('\u5f53\u524d\u7ae0\u6682\u65e0\u53ef\u91cd\u65b0\u751f\u6210\u7684\u5185\u5bb9');
-            return;
-        }
-        updateCurrentWorld(target => {
-            const previousEntries = (target.ai.chapterEntries || []).slice(0, -1);
-            target.ai.chapterEntries = previousEntries;
-            target.ai.renderedStory = previousEntries.map(item => item.content).filter(Boolean).join('\n\n');
-            target.ai.storyBranches = previousEntries.length ? [...(previousEntries[previousEntries.length - 1].branches || [])] : [];
-            target.ai.currentChapterIndex = Math.max(previousEntries.length - 1, 0);
-            target.ai.selectedBranch = latestEntry.sourceBranch || '';
-            target.chapters = (target.chapters || ['\u7b2c\u4e00\u7ae0']).slice(0, Math.max((target.chapters || []).length - 1, 1));
-        });
-        renderWorldData();
-        generateStoryWithAI();
-    }
-
-    function copyReaderStory() {
-        const world = getCurrentWorld();
-        const entries = Array.isArray(world?.ai?.chapterEntries) ? world.ai.chapterEntries : [];
-        const currentIndex = Math.min(Math.max(world?.ai?.currentChapterIndex || 0, 0), Math.max(entries.length - 1, 0));
-        const currentEntry = entries[currentIndex];
-        if (!currentEntry?.content) {
-            showToast('没有可复制的故事');
-            return;
-        }
-        navigator.clipboard.writeText(currentEntry.content).then(() => showToast('已复制正文')).catch(() => showToast('复制失败'));
-    }
-
-    async function saveToCloud() {
-        const username = getCloudUsernameInput()?.value.trim();
-        const supabaseApi = getSupabaseApi();
-        if (!username) {
-            showToast('请先填写同步用户名');
-            return;
-        }
-        if (!supabaseApi?.saveToCloud) {
-            showToast('云同步服务未就绪');
-            return;
-        }
-        document.getElementById('syncStatus').textContent = '上传中...';
-        try {
-            saveAiDrafts();
-            autoSaveWorld();
-            const localWorlds = readJson(STORAGE.worlds, {});
-            let mergedWorlds = { ...localWorlds };
-            const currentWorld = localStorage.getItem(STORAGE.currentWorld) || '';
-            const theme = localStorage.getItem(STORAGE.theme) || 'light';
-            const globalInspo = JSON.stringify(getGlobalInspo());
-            try {
-                const existingCloud = normalizeCloudPayload(await supabaseApi.loadFromCloud(username));
-                const existingWorlds = existingCloud?.worlds ? JSON.parse(existingCloud.worlds) : {};
-                mergedWorlds = { ...existingWorlds, ...localWorlds };
-            } catch {}
-            const worlds = JSON.stringify(mergedWorlds);
-            await supabaseApi.saveToCloud(username, {
-                worlds,
-                currentWorld,
-                theme,
-                globalInspo,
-                ss_worlds: worlds,
-                ss_current_world_v2: currentWorld,
-                ss_theme_v1: theme
-            });
-            localStorage.setItem(STORAGE.cloudUsername, username);
-            document.getElementById('syncStatus').textContent = '上传成功';
-            showToast('已上传到云端');
-        } catch (error) {
-            document.getElementById('syncStatus').textContent = '上传失败';
-            showToast(error.message || '上传失败');
-        }
-    }
-
-    async function loadFromCloud() {
-        const username = getCloudUsernameInput()?.value.trim();
-        const supabaseApi = getSupabaseApi();
-        if (!username) {
-            showToast('请先填写同步用户名');
-            return;
-        }
-        if (!supabaseApi?.loadFromCloud) {
-            showToast('云同步服务未就绪');
-            return;
-        }
-        document.getElementById('syncStatus').textContent = '下载中...';
-        try {
-            const data = normalizeCloudPayload(await supabaseApi.loadFromCloud(username));
-            if (data.worlds) localStorage.setItem(STORAGE.worlds, data.worlds);
-            if (data.currentWorld) localStorage.setItem(STORAGE.currentWorld, data.currentWorld);
-            if (data.theme) localStorage.setItem(STORAGE.theme, data.theme);
-            if (data.globalInspo) {
-                try {
-                    saveGlobalInspo(typeof data.globalInspo === 'string' ? JSON.parse(data.globalInspo) : data.globalInspo);
-                } catch {}
-            }
-            localStorage.setItem(STORAGE.cloudUsername, username);
-            ensureWorldSystem();
-            migrateGlobalInspoFromWorlds();
-            applyTheme();
-            renderBookshelf();
-            renderWorldData();
-            document.getElementById('syncStatus').textContent = '下载成功';
-            showToast('已从云端恢复');
-        } catch (error) {
-            document.getElementById('syncStatus').textContent = '下载失败';
-            showToast(error.message || '下载失败');
-        }
-    }
-
-    function applyTheme() {
-        const theme = localStorage.getItem(STORAGE.theme) || 'light';
-        document.documentElement.setAttribute('data-theme', theme);
-        const checkbox = document.getElementById('checkbox');
-        if (checkbox) checkbox.checked = theme === 'dark';
-    }
-
-    function toggleTheme() {
-        const theme = document.getElementById('checkbox')?.checked ? 'dark' : 'light';
-        localStorage.setItem(STORAGE.theme, theme);
-        applyTheme();
-    }
-
-    function openSettingsModal() {
-        document.getElementById('modal-settings')?.classList.add('active');
-    }
-
-    function closeSettingsModal() {
-        document.getElementById('modal-settings')?.classList.remove('active');
-    }
-
-    function getCloudUsernameInput() {
-        return document.querySelector('#modal-settings #cloudUsername') || document.getElementById('cloudUsername');
-    }
-
-    function getSyncStatusNode() {
-        return document.querySelector('#modal-settings #syncStatus') || document.getElementById('syncStatus');
-    }
-
-    function initCloudUsername() {
-        const input = getCloudUsernameInput();
-        if (input) input.value = localStorage.getItem(STORAGE.cloudUsername) || '';
-    }
+    function getProtagonistPrompt(world) { return aiActions.getProtagonistPrompt(world); }
+    function runGeneration(options) { return aiActions.runGeneration(options); }
+    function generateWithAI() { return aiActions.generateWithAI(); }
+    function generateWorldbookWithAI() { return aiActions.generateWorldbookWithAI(); }
 
     function bindDraftInputs() {
         ['aiPersona', 'aiWorldPersona', 'aiStoryPersona', 'aiStoryRequest', 'storyBranchTemplate'].forEach(id => {
@@ -1695,27 +407,179 @@
 
     function initModalClose() {
         document.addEventListener('click', event => {
-            if (event.target?.id === 'modal-settings') closeSettingsModal();
+            if (event.target?.id === 'modal-settings') settingsActions?.closeSettingsModal();
             if (event.target?.id === 'importModal') closeImportModal();
         });
     }
 
     function initStreamingBridge() {
         window.onAIStreamUpdate = content => {
-            if (!currentStreamingTarget) return;
-            const target = document.getElementById(currentStreamingTarget);
-            if (target) target.textContent = content;
+            aiActions?.handleStreamUpdate(content);
         };
     }
 
+    function initFeatureModules() {
+        if (!renderActions) {
+            renderActions = window.RenderModule.create({
+                DEFAULT_BRANCH_TEMPLATE,
+                MODULE_JSON_SCHEMA,
+                WORLD_MODULE_CONFIGS,
+                enterWorkspace,
+                ensureWorldShape,
+                escapeHtml,
+                getCurrentWorld,
+                getWorlds,
+                updateWorldModuleHint
+            });
+        }
+        if (!aiActions) {
+            aiActions = window.AiWorkflowModule.create({
+                MODULE_GUIDE_LABELS,
+                MODULE_JSON_SCHEMA,
+                WORLD_MODULE_CONFIGS,
+                ensureWorldShape,
+                getCurrentWorld,
+                getSelectedCharModules,
+                renderWorldData,
+                saveAiDrafts,
+                scrollResultIntoView,
+                setButtonBusy,
+                showToast,
+                updateCurrentWorld
+            });
+        }
+        if (!settingsActions) {
+            settingsActions = window.SettingsModule.create({
+                STORAGE,
+                autoSaveWorld,
+                ensureWorldSystem,
+                escapeHtml,
+                generateId,
+                getGlobalInspo,
+                getSupabaseApi,
+                migrateGlobalInspoFromWorlds,
+                normalizeCloudPayload,
+                readJson,
+                renderBookshelf,
+                renderWorldData,
+                saveAiDrafts,
+                saveGlobalInspo,
+                setApiStatus,
+                showToast
+            });
+        }
+        if (!storyActions) {
+            storyActions = window.StoryModule.create({
+                DEFAULT_BRANCH_TEMPLATE,
+                ensureWorldShape,
+                getCurrentWorld,
+                getProtagonistPrompt,
+                renderWorldData,
+                runGeneration,
+                showToast,
+                switchWorkspacePanel,
+                updateCurrentWorld
+            });
+        }
+    }
+
+    function runAction(action, target, event) {
+        const handlers = {
+            'ai:copy-raw': () => copyRawReply(target.dataset.kind),
+            'ai:draft-save': saveAiDrafts,
+            'ai:generate-character': generateWithAI,
+            'ai:generate-worldbook': generateWorldbookWithAI,
+            'ai:json-preview-toggle': toggleJsonPreview,
+            'ai:modules-toggle': () => toggleAiModules(target.dataset.mode),
+            'ai:raw-char-toggle': toggleRawReplyChar,
+            'backup:choose': () => settingsActions.chooseLocalBackup(),
+            'backup:export': () => settingsActions.exportLocalBackup(),
+            'backup:import': () => settingsActions.importLocalBackup(target),
+            'bookshelf:enter': enterBookshelf,
+            'cloud:load': () => settingsActions.loadFromCloud(),
+            'cloud:save': () => settingsActions.saveToCloud(),
+            'home:back': backToHome,
+            'import:close': closeImportModal,
+            'import:confirm': confirmImport,
+            'inspo:add': () => addInspoWord(target.dataset.category),
+            'inspo:clear': () => clearInspoPool(target.dataset.category),
+            'inspo:deselect': () => deselectInspoWord(target.dataset.category, target.dataset.value),
+            'inspo:export': () => exportInspoPool(target.dataset.category),
+            'inspo:import-open': () => openImportModal(target.dataset.category),
+            'inspo:load-default': () => loadDefaultInspos(target.dataset.category),
+            'inspo:remove': () => {
+                event.stopPropagation();
+                removeInspoWord(target.dataset.category, Number(target.dataset.index), event);
+            },
+            'inspo:toggle': () => toggleInspoWord(target.dataset.category, Number(target.dataset.index)),
+            'protagonist:add': addProtagonist,
+            'protagonist:remove': () => removeProtagonist(target.dataset.id),
+            'protagonist:update': () => updateProtagonistField(target.dataset.id, target.dataset.field, target.value),
+            'settings:api-key-toggle': () => settingsActions.toggleApiKey(),
+            'settings:close': () => settingsActions.closeSettingsModal(),
+            'settings:models-fetch': () => settingsActions.fetchModels(),
+            'settings:open': () => settingsActions.openSettingsModal(),
+            'settings:provider-delete': () => settingsActions.deleteProvider(),
+            'settings:provider-new': () => settingsActions.newProvider(),
+            'settings:provider-rename': () => settingsActions.renameProvider(),
+            'settings:provider-save': () => settingsActions.saveCurrentProviderConfig(),
+            'settings:provider-switch': () => settingsActions.switchProvider(target.value),
+            'settings:font-custom': () => settingsActions.setCustomFont(target.value),
+            'settings:font-select': () => settingsActions.setFont(target.value),
+            'settings:theme-select': () => settingsActions.setTheme(target.value),
+            'settings:theme-toggle': () => settingsActions.toggleTheme(),
+            'story:branch-select': () => storyActions.selectStoryBranch(Number(target.dataset.index)),
+            'story:branch-template-save': saveStoryBranchTemplate,
+            'story:chapter-change': () => storyActions.changeStoryChapter(target.value),
+            'story:continue': () => storyActions.continueStoryFromSelectedBranch(),
+            'story:copy-current': () => storyActions.copyReaderStory(),
+            'story:generate': () => storyActions.generateStoryWithAI(),
+            'story:regenerate': () => storyActions.regenerateCurrentChapter(),
+            'ui:fold-toggle': () => toggleFoldSection(target.dataset.section),
+            'world:create': createNewWorld,
+            'world:delete': deleteCurrentWorld,
+            'world:rename': renameCurrentWorld,
+            'worldbook:save': autoSaveWorld,
+            'workspace:switch': () => switchWorkspacePanel(target.dataset.panel)
+        };
+        handlers[action]?.();
+    }
+
+    function bindActionEvents() {
+        document.addEventListener('click', event => {
+            const target = event.target.closest('[data-action]');
+            if (!target) return;
+            runAction(target.dataset.action, target, event);
+        });
+        document.addEventListener('input', event => {
+            const target = event.target.closest('[data-input-action]');
+            if (!target) return;
+            runAction(target.dataset.inputAction, target, event);
+        });
+        document.addEventListener('change', event => {
+            const target = event.target.closest('[data-change-action]');
+            if (!target) return;
+            runAction(target.dataset.changeAction, target, event);
+        });
+        document.addEventListener('keydown', event => {
+            const target = event.target.closest('[data-keydown-action]');
+            if (!target) return;
+            if (target.dataset.keydownAction === 'inspo:input-keydown') {
+                inspoInputKeydown(event, target.dataset.category);
+            }
+        });
+    }
+
     function init() {
+        initFeatureModules();
         ensureWorldSystem();
         migrateGlobalInspoFromWorlds();
-        applyTheme();
-        initCloudUsername();
-        ensureProviderSystem();
+        settingsActions.initAppearanceSettings();
+        settingsActions.initCloudUsername();
+        settingsActions.ensureProviderSystem();
         initModalClose();
         initStreamingBridge();
+        bindActionEvents();
         bindDraftInputs();
         renderBookshelf();
         renderWorldData();
@@ -1725,7 +589,7 @@
         switchWorkspacePanel('original');
     }
 
-    Object.assign(window, {
+    window.GeneratorApp = {
         showToast,
         getWorlds,
         saveWorlds,
@@ -1754,6 +618,7 @@
         confirmImport,
         inspoInputKeydown,
         autoSaveWorld,
+        saveAiDrafts,
         saveStoryBranchTemplate,
         toggleAiModules,
         toggleFoldSection,
@@ -1761,28 +626,18 @@
         toggleJsonPreview,
         toggleRawReplyChar,
         copyRawReply,
-        copyReaderStory,
+        copyReaderStory: (...args) => storyActions?.copyReaderStory(...args),
         generateWithAI,
         generateWorldbookWithAI,
-        generateStoryWithAI,
-        selectStoryBranch,
-        changeStoryChapter,
-        continueStoryFromSelectedBranch,
-        regenerateCurrentChapter,
-        openSettingsModal,
-        closeSettingsModal,
-        toggleTheme,
-        saveToCloud,
-        loadFromCloud,
-        switchProvider,
-        saveCurrentProviderConfig,
-        newProvider,
-        renameProvider,
-        deleteProvider,
-        toggleApiKey,
-        fetchModels,
-        loadWorldData: renderWorldData
-    });
+        generateStoryWithAI: (...args) => storyActions?.generateStoryWithAI(...args),
+        selectStoryBranch: (...args) => storyActions?.selectStoryBranch(...args),
+        changeStoryChapter: (...args) => storyActions?.changeStoryChapter(...args),
+        continueStoryFromSelectedBranch: (...args) => storyActions?.continueStoryFromSelectedBranch(...args),
+        regenerateCurrentChapter: (...args) => storyActions?.regenerateCurrentChapter(...args),
+        loadWorldData: renderWorldData,
+        get settings() { return settingsActions; },
+        get story() { return storyActions; }
+    };
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
