@@ -75,6 +75,31 @@
         }
     }
 
+    function setWorkspaceDrawer(open) {
+        const page = document.getElementById('page-workspace');
+        const buttons = document.querySelectorAll('[data-action="workspace:drawer-open"], [data-action="workspace:drawer-toggle"]');
+        page?.classList.toggle('sidebar-open', open);
+        buttons.forEach(button => {
+            button.setAttribute('aria-expanded', String(open));
+            if (button.dataset.action === 'workspace:drawer-toggle') {
+                button.setAttribute('aria-label', open ? '收起侧边栏' : '展开侧边栏');
+            }
+        });
+    }
+
+    function openWorkspaceDrawer() {
+        setWorkspaceDrawer(true);
+    }
+
+    function closeWorkspaceDrawer() {
+        setWorkspaceDrawer(false);
+    }
+
+    function toggleWorkspaceDrawer() {
+        const page = document.getElementById('page-workspace');
+        setWorkspaceDrawer(!page?.classList.contains('sidebar-open'));
+    }
+
     function getSupabaseApi() {
         return typeof SupabaseClient !== 'undefined' ? SupabaseClient : window.SupabaseClient;
     }
@@ -540,6 +565,9 @@
             'world:delete': deleteCurrentWorld,
             'world:rename': renameCurrentWorld,
             'worldbook:save': autoSaveWorld,
+            'workspace:drawer-close': closeWorkspaceDrawer,
+            'workspace:drawer-open': openWorkspaceDrawer,
+            'workspace:drawer-toggle': toggleWorkspaceDrawer,
             'workspace:switch': () => switchWorkspacePanel(target.dataset.panel)
         };
         handlers[action]?.();
@@ -550,6 +578,9 @@
             const target = event.target.closest('[data-action]');
             if (!target) return;
             runAction(target.dataset.action, target, event);
+            if (target.dataset.action !== 'workspace:drawer-toggle' && target.closest('.workspace-sidebar') && window.matchMedia?.('(max-width: 992px)').matches) {
+                closeWorkspaceDrawer();
+            }
         });
         document.addEventListener('input', event => {
             const target = event.target.closest('[data-input-action]');
@@ -562,6 +593,9 @@
             runAction(target.dataset.changeAction, target, event);
         });
         document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                closeWorkspaceDrawer();
+            }
             const target = event.target.closest('[data-keydown-action]');
             if (!target) return;
             if (target.dataset.keydownAction === 'inspo:input-keydown') {

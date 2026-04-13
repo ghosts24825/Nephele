@@ -46,6 +46,7 @@
 <div id="page-workspace" class="page-container page-hidden">
     <header class="workspace-header">
         <div class="workspace-header-group workspace-header-left">
+            <button class="btn-header-small workspace-menu-toggle" type="button" data-action="workspace:drawer-open" aria-controls="workspaceSidebar" aria-expanded="false">侧边栏</button>
             <button class="btn-back" type="button" data-action="home:back">&#36820;&#22238;&#39318;&#39029;</button>
             <button class="btn-header-icon" type="button" data-action="settings:open" title="&#35774;&#32622;" aria-label="&#35774;&#32622;">
                 <svg class="icon-line" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"></path><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.08a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.08A1.7 1.7 0 0 0 4.6 8.94a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06c.5.5 1.26.64 1.88.34A1.7 1.7 0 0 0 10 3.01V3a2 2 0 1 1 4 0v.08a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.88A1.7 1.7 0 0 0 20.96 10H21a2 2 0 1 1 0 4h-.08A1.7 1.7 0 0 0 19.4 15Z"></path></svg>
@@ -61,16 +62,26 @@
         </div>
     </header>
 
+    <div class="workspace-sidebar-overlay" data-action="workspace:drawer-close" aria-hidden="true"></div>
     <div class="workspace-layout">
-        <aside class="workspace-sidebar">
+        <aside class="workspace-sidebar" id="workspaceSidebar">
             <section class="sidebar-section">
+                <button class="workspace-drawer-toggle" type="button" data-action="workspace:drawer-toggle" aria-controls="workspaceSidebar" aria-expanded="false" aria-label="展开侧边栏">
+                    <svg class="icon-line" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path></svg>
+                    <span class="workspace-nav-label">侧边栏</span>
+                </button>
                 <h3 class="sidebar-title">&#24037;&#20316;&#21306;</h3>
                 <div class="workspace-nav">
-                    <button type="button" class="workspace-nav-btn active" id="nav-original" data-action="workspace:switch" data-panel="original">&#21407;&#26377;&#20154;&#35774;</button>
-                    <button type="button" class="workspace-nav-btn" id="nav-inspo" data-action="workspace:switch" data-panel="inspo">&#28789;&#24863;&#27744;</button>
-                    <button type="button" class="workspace-nav-btn" id="nav-ai" data-action="workspace:switch" data-panel="ai">AI &#29983;&#25104;</button>
-                    <button type="button" class="workspace-nav-btn" id="nav-opening" data-action="workspace:switch" data-panel="opening">&#29983;&#25104;&#24320;&#22836;</button>
-                    <button type="button" class="workspace-nav-btn" id="nav-story" data-action="workspace:switch" data-panel="story">&#38405;&#35835;&#25925;&#20107;</button>
+                    <button type="button" class="workspace-nav-btn active" id="nav-original" data-action="workspace:switch" data-panel="original" aria-label="原有人设"><svg class="icon-line" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v17H6a2 2 0 0 0-2 2Z"></path><path d="M8 7h6"></path><path d="M8 11h6"></path></svg><span class="workspace-nav-label">&#21407;&#26377;&#20154;&#35774;</span></button>
+                    <button type="button" class="workspace-nav-btn" id="nav-inspo" data-action="workspace:switch" data-panel="inspo" aria-label="灵感池"><svg class="icon-line" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.7 5.1L19 10l-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9L12 3Z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"></path></svg><span class="workspace-nav-label">&#28789;&#24863;&#27744;</span></button>
+                    <button type="button" class="workspace-nav-btn" id="nav-ai" data-action="workspace:switch" data-panel="ai" aria-label="AI 生成"><svg class="icon-line" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v4"></path><path d="M12 18v4"></path><path d="M4.93 4.93l2.83 2.83"></path><path d="M16.24 16.24l2.83 2.83"></path><path d="M2 12h4"></path><path d="M18 12h4"></path><path d="M4.93 19.07l2.83-2.83"></path><path d="M16.24 7.76l2.83-2.83"></path><circle cx="12" cy="12" r="3"></circle></svg><span class="workspace-nav-label">AI &#29983;&#25104;</span></button>
+                    <button type="button" class="workspace-nav-btn" id="nav-opening" data-action="workspace:switch" data-panel="opening" aria-label="生成开头"><svg class="icon-line" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h10l4 4v12H5z"></path><path d="M15 4v5h5"></path><path d="M8 13h8"></path><path d="M8 17h5"></path></svg><span class="workspace-nav-label">&#29983;&#25104;&#24320;&#22836;</span></button>
+                    <button type="button" class="workspace-nav-btn" id="nav-story" data-action="workspace:switch" data-panel="story" aria-label="阅读故事"><svg class="icon-line" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5a5 5 0 0 1 7 0v16a5 5 0 0 0-7 0V5Z"></path><path d="M21 5a5 5 0 0 0-7 0v16a5 5 0 0 1 7 0V5Z"></path></svg><span class="workspace-nav-label">&#38405;&#35835;&#25925;&#20107;</span></button>
+                </div>
+                <div class="workspace-sidebar-actions">
+                    <button type="button" class="workspace-nav-btn" data-action="settings:open" aria-label="设置"><svg class="icon-line" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"></path><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.08a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.08A1.7 1.7 0 0 0 4.6 8.94a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06c.5.5 1.26.64 1.88.34A1.7 1.7 0 0 0 10 3.01V3a2 2 0 1 1 4 0v.08a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.88A1.7 1.7 0 0 0 20.96 10H21a2 2 0 1 1 0 4h-.08A1.7 1.7 0 0 0 19.4 15Z"></path></svg><span class="workspace-nav-label">设置</span></button>
+                    <button type="button" class="workspace-nav-btn" data-action="home:back" aria-label="返回首页"><svg class="icon-line" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"></path><path d="M12 19l-7-7 7-7"></path></svg><span class="workspace-nav-label">返回首页</span></button>
+                    <button type="button" class="workspace-nav-btn workspace-nav-danger" data-action="world:delete" aria-label="删除"><svg class="icon-line" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M6 7l1 14h10l1-14"></path><path d="M9 7V4h6v3"></path></svg><span class="workspace-nav-label">删除</span></button>
                 </div>
             </section>
         </aside>
