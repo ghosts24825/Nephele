@@ -692,6 +692,18 @@ body {
     background: var(--panel-bg);
 }
 
+.parsed-char-title {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+}
+
+.parsed-char-title strong,
+.parsed-char-title span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 .parsed-char-header span {
     font-size: 0.85rem;
     font-weight: 700;

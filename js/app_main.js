@@ -399,6 +399,23 @@
         navigator.clipboard.writeText(content).then(() => showToast('已复制')).catch(() => showToast('复制失败'));
     }
 
+    function copyCharacterCard(index) {
+        const raw = getCurrentWorld()?.ai?.rawChar || '';
+        try {
+            const entries = Object.entries(JSON.parse(raw));
+            const entry = entries[index];
+            if (!entry) {
+                showToast('没有可复制的人设卡');
+                return;
+            }
+            const [name, data] = entry;
+            const content = JSON.stringify({ [name]: data }, null, 2);
+            navigator.clipboard.writeText(content).then(() => showToast(`已复制：${name}`)).catch(() => showToast('复制失败'));
+        } catch {
+            showToast('人设卡未解析，无法单独复制');
+        }
+    }
+
     function setButtonBusy(buttonId, statusId, busy, text) {
         const button = document.getElementById(buttonId);
         const status = document.getElementById(statusId);
@@ -514,6 +531,7 @@
             'ai:draft-save': saveAiDrafts,
             'ai:generate-character': generateWithAI,
             'ai:generate-worldbook': generateWorldbookWithAI,
+            'ai:copy-character-card': () => copyCharacterCard(Number(target.dataset.index)),
             'ai:json-preview-toggle': toggleJsonPreview,
             'ai:modules-toggle': () => toggleAiModules(target.dataset.mode),
             'ai:raw-char-toggle': toggleRawReplyChar,

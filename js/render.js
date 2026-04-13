@@ -180,11 +180,14 @@
         }
         try {
             const parsed = JSON.parse(raw);
-            container.innerHTML = Object.entries(parsed).map(([name, data]) => `
+            container.innerHTML = Object.entries(parsed).map(([name, data], index) => `
                 <div class="parsed-char-card">
                     <div class="parsed-char-header">
-                        <strong>${escapeHtml(name)}</strong>
-                        <span>${escapeHtml((data.basic?.identity || []).join(' / ') || (data.basic?.archetype || []).join(' / ') || '角色卡')}</span>
+                        <div class="parsed-char-title">
+                            <strong>${escapeHtml(name)}</strong>
+                            <span>${escapeHtml((data.basic?.identity || []).join(' / ') || (data.basic?.archetype || []).join(' / ') || '角色卡')}</span>
+                        </div>
+                        <button class="btn-copy-small" type="button" data-action="ai:copy-character-card" data-index="${index}">复制</button>
                     </div>
                     <div class="parsed-char-body">
                         <div class="parsed-char-summary">
